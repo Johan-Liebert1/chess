@@ -1,3 +1,4 @@
+#include "arena.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
 #include <SDL2/SDL_events.h>
@@ -8,6 +9,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -43,6 +45,12 @@ enum Color {
     White,
 };
 
+struct _Vec2 {
+    int x;
+    int y;
+};
+typedef struct _Vec2 Vec2;
+
 struct _Pos {
     int row;
     int col;
@@ -56,6 +64,9 @@ struct _Piece {
     enum Color color;
     bool has_moved;
     bool is_protected;
+    uint8_t num_moves;
+    // it's 2024, memory is cheap, screw it
+    Pos *moves;
 };
 typedef struct _Piece Piece;
 
@@ -69,6 +80,7 @@ typedef Cell ChessBoard[CHESS_BOARD_ROWS][CHESS_BOARD_COLS];
 
 struct _Chess {
     ChessBoard board;
+    Arena arena;
 };
 typedef struct _Chess Chess;
 
@@ -114,111 +126,97 @@ void Chess_init_board(Chess *chess) {
 }
 
 void Chess_calculate_bishop_moves(Chess *game, Piece *piece) {
+    piece->num_moves = 0;
+
+    if (piece->moves == NULL) {
+        piece->moves = arena_alloc(&game->arena, sizeof(Pos) * 64);
+    }
+
     // Top Right
-    for (int row = piece->pos.row - 1; row >= 0; row--) {
-        for (int col = piece->pos.col + 1; col <= CHESS_BOARD_COLS; col++) {
-            Cell cell = game->board[row][col];
+    for (int row = piece->pos.row - 1, col = piece->pos.col + 1; row >= 0 && col < CHESS_BOARD_COLS; row--, col++) {
+        Cell cell = game->board[row][col];
 
-            if (cell.piece.type == UndefPieceType) {
-                // NO piece on this square, can move here
-                printf("Move: %d, %d\n", row, col);
-                continue;
-            }
+        if (cell.piece.type == UndefPieceType) {
+            // NO piece on this square, can move here
+            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
+            piece->num_moves += 1;
+            continue;
+        }
 
-            if (cell.piece.color != piece->color) {
-                // Opposite colored piece, can capture
-                printf("Capture: %d, %d\n", row, col);
-            } else {
-                goto top_left;
-            }
+        if (cell.piece.color != piece->color) {
+            // Opposite colored piece, can capture
+            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
+            piece->num_moves += 1;
+        } else {
+            goto top_left;
         }
     }
 
 top_left:
-    for (int row = piece->pos.row - 1; row >= 0; row--) {
-        for (int col = piece->pos.col - 1; col >= 0; col--) {
-            Cell cell = game->board[row][col];
+    for (int row = piece->pos.row - 1, col = piece->pos.col - 1; row >= 0 && col >= 0; row--, col--) {
+        Cell cell = game->board[row][col];
 
-            if (cell.piece.type == UndefPieceType) {
-                // NO piece on this square, can move here
-                printf("row: %d, col: %d\n", row, col);
-                continue;
-            }
+        if (cell.piece.type == UndefPieceType) {
+            // NO piece on this square, can move here
+            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
+            piece->num_moves += 1;
+            continue;
+        }
 
-            if (cell.piece.color != piece->color) {
-                // Opposite colored piece, can capture
-                printf("row: %d, col: %d\n", row, col);
-            } else {
-                goto bottom_left;
-            }
+        if (cell.piece.color != piece->color) {
+            // Opposite colored piece, can capture
+            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
+            piece->num_moves += 1;
+            break;
+        } else {
+            goto bottom_left;
         }
     }
 
 bottom_left:
-    for (int row = piece->pos.row + 1; row < CHESS_BOARD_ROWS; row++) {
-        for (int col = piece->pos.col - 1; col >= 0; col--) {
-            Cell cell = game->board[row][col];
+    for (int row = piece->pos.row + 1, col = piece->pos.col - 1; row < CHESS_BOARD_ROWS && col >= 0; row++, col--) {
+        Cell cell = game->board[row][col];
 
-            if (cell.piece.type == UndefPieceType) {
-                // NO piece on this square, can move here
-                printf("row: %d, col: %d\n", row, col);
-                continue;
-            }
+        if (cell.piece.type == UndefPieceType) {
+            // NO piece on this square, can move here
+            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
+            piece->num_moves += 1;
+            break;
+        }
 
-            if (cell.piece.color != piece->color) {
-                // Opposite colored piece, can capture
-                printf("row: %d, col: %d\n", row, col);
-            } else {
-                goto bottom_right;
-            }
+        if (cell.piece.color != piece->color) {
+            // Opposite colored piece, can capture
+            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
+            piece->num_moves += 1;
+            break;
+        } else {
+            goto bottom_right;
         }
     }
 
 bottom_right:
-    for (int row = piece->pos.row - 1; row >= 0; row--) {
-        for (int col = piece->pos.col + 1; col <= CHESS_BOARD_COLS; col++) {
-            Cell cell = game->board[row][col];
+    for (int row = piece->pos.row - 1, col = piece->pos.col + 1; row >= 0 && col < CHESS_BOARD_COLS; row--, col++) {
+        Cell cell = game->board[row][col];
 
-            if (cell.piece.type == UndefPieceType) {
-                // NO piece on this square, can move here
-                printf("row: %d, col: %d\n", row, col);
-                continue;
-            }
+        if (cell.piece.type == UndefPieceType) {
+            // NO piece on this square, can move here
+            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
+            piece->num_moves += 1;
+            continue;
+        }
 
-            if (cell.piece.color != piece->color) {
-                // Opposite colored piece, can capture
-                printf("row: %d, col: %d\n", row, col);
-            } else {
-                goto out;
-            }
+        if (cell.piece.color != piece->color) {
+            // Opposite colored piece, can capture
+            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
+            piece->num_moves += 1;
+            break;
+        } else {
+            goto out;
         }
     }
 
 out:
     return;
-}
-
-void Chess_calculate_moves(Chess *game, Pos pos) {
-    Piece piece = game->board[pos.row][pos.col].piece;
-
-    switch (piece.type) {
-        case UndefPieceType:
-            return;
-
-        case King:
-
-        case Queen:
-
-        case Rook:
-
-        case Bishop:
-            return Chess_calculate_bishop_moves(game, &piece);
-
-        case Knight:
-
-        case Pawn:
-            break;
-    }
 }
 
 static inline Pos mouse_pos_to_cell() {
@@ -231,6 +229,12 @@ static inline Pos mouse_pos_to_cell() {
         pos.row = (mouse_y - BOARD_POS_Y_START) / CELL_SIZE;
     }
 
+    return pos;
+}
+
+// returns the top left corner of cell at (row,col)
+static inline Vec2 get_cell_coordinate(int row, int col) {
+    Vec2 pos = {.x = BOARD_POS_X_START + col * CELL_SIZE, .y = BOARD_POS_Y_START + row * CELL_SIZE};
     return pos;
 }
 
@@ -266,8 +270,8 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
     int x = BOARD_POS_X_START;
     int y = BOARD_POS_Y_START;
 
-    for (size_t row = 0; row < CHESS_BOARD_ROWS; row++) {
-        for (size_t col = 0; col < CHESS_BOARD_COLS; col++) {
+    for (int row = 0; row < CHESS_BOARD_ROWS; row++) {
+        for (int col = 0; col < CHESS_BOARD_COLS; col++) {
             Cell cell = (game->board)[row][col];
 
             if (cell.color == White) {
@@ -299,6 +303,51 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
     }
 }
 
+void show_piece_moves(SDL_Renderer *renderer, Piece *piece) {
+    printf("num_moves: %d\n", piece->num_moves);
+
+    for (int i = 0; i < piece->num_moves; i++) {
+        Vec2 cell_coord = get_cell_coordinate(piece->moves[i].row, piece->moves[i].col);
+        SDL_Rect move = (SDL_Rect){
+            .x = cell_coord.x,
+            .y = cell_coord.y,
+            .w = CELL_SIZE / 4,
+            .h = CELL_SIZE / 4,
+        };
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+        SDL_RenderFillRect(renderer, &move);
+    }
+}
+
+Piece *Chess_calculate_moves(Chess *game, Pos pos) {
+    Piece *piece = &game->board[pos.row][pos.col].piece;
+
+    switch (piece->type) {
+        case UndefPieceType:
+            return NULL;
+
+        case King:
+            return NULL;
+
+        case Queen:
+            return NULL;
+
+        case Rook:
+            return NULL;
+
+        case Bishop:
+            Chess_calculate_bishop_moves(game, piece);
+            return piece;
+
+        case Knight:
+            return NULL;
+
+        case Pawn:
+            return NULL;
+    }
+}
+
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL initialization failed! %s\n", SDL_GetError());
@@ -326,6 +375,10 @@ int main() {
     SDL_Event event;
 
     Chess game = {0};
+
+    // enough to store moves for all pieces
+    game.arena = arena_init(CHESS_BOARD_COLS * CHESS_BOARD_ROWS * sizeof(Pos) * 32);
+
     Chess_init_board(&game);
 
     SDL_Texture *sprites_texture = init_sprites(renderer);
@@ -335,10 +388,12 @@ int main() {
             SDL_GetMouseState(&mouse_x, &mouse_y);
 
             Pos pos = mouse_pos_to_cell();
+            Piece *piece = 0;
 
             switch (event.type) {
                 case SDL_QUIT:
                     quit = 1;
+                    break;
 
                 case SDL_KEYDOWN: {
                     switch (event.key.keysym.sym) {
@@ -347,15 +402,26 @@ int main() {
                             quit = 1;
                             break;
                         }
-
-                        case SDL_MOUSEBUTTONDOWN: {
-                            Chess_calculate_moves(&game, pos);
-                        }
                     }
+
+                    break;
+                }
+
+                case SDL_MOUSEBUTTONDOWN: {
+                    Piece *hi = Chess_calculate_moves(&game, pos);
+
+                    if (piece == NULL)
+                        piece = hi;
+
+                    break;
                 }
             }
 
             draw_chess_board(&game, renderer, sprites_texture, pos);
+
+            if (piece != NULL) {
+                show_piece_moves(renderer, piece);
+            }
 
             SDL_RenderPresent(renderer);
         }
