@@ -108,7 +108,7 @@ void Chess_init_board(Chess *chess) {
         }
     }
 
-    PUT_PIECE(chess->board, 4, 5, Knight, White, 3);
+    PUT_PIECE(chess->board, 2, 5, Knight, White, 3);
 
     PUT_PIECE(chess->board, 0, 0, Rook, White, 4);
     PUT_PIECE(chess->board, 0, 1, Knight, White, 3);
@@ -333,8 +333,12 @@ void Chess_calculate_knight_moves(Chess *game, Piece *piece, int num_moves) {
             Pos potential_move = (Pos){.row = piece->pos.row + row_adder, .col = piece->pos.col + col_adder};
 
             if (pos_within_bounds(&potential_move)) {
-                piece->moves[piece->num_moves] = potential_move;
-                piece->num_moves += 1;
+                Cell cell = game->board[potential_move.row][potential_move.col];
+
+                if (cell.piece.type == UndefPieceType || cell.piece.color != piece->color) {
+                    piece->moves[piece->num_moves] = potential_move;
+                    piece->num_moves += 1;
+                }
             }
         }
     }
