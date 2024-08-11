@@ -21,8 +21,8 @@
 enum PieceType { UndefPieceType, King, Queen, Rook, Bishop, Knight, Pawn };
 
 enum Color {
-    Black,
-    White,
+    ColorBlack,
+    ColorWhite,
 };
 
 struct _Vec2 {

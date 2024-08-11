@@ -120,7 +120,7 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
         for (int col = 0; col < CHESS_BOARD_COLS; col++) {
             Cell cell = (game->board)[row][col];
 
-            if (cell.color == White) {
+            if (cell.color == ColorWhite) {
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
             } else {
                 SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
@@ -141,7 +141,7 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
                 SDL_RenderCopy(renderer, sprites_texture, &cell.piece.sprite_loc, &cell_dst);
             }
 
-            if (game->kingInCheck[0] && Chess_is_piece(&cell.piece, King, Black)) {
+            if (game->kingInCheck[0] && Chess_is_piece(&cell.piece, King, ColorBlack)) {
                 SDL_SetRenderDrawColor(renderer, 255, 0, 0, 150);
 
                 // Draw 4 triangles inside the cell
@@ -151,7 +151,7 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
                 }
             }
 
-            if (game->kingInCheck[1] && Chess_is_piece(&cell.piece, King, Black)) {
+            if (game->kingInCheck[1] && Chess_is_piece(&cell.piece, King, ColorWhite)) {
                 SDL_SetRenderDrawColor(renderer, 255, 0, 0, 150);
 
                 // Draw 4 triangles inside the cell
@@ -168,8 +168,8 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
         y += CELL_SIZE;
     }
 
-    Piece *kingInCheck = game->kingInCheck[0]   ? Chess_find_piece(game, King, Black)
-                         : game->kingInCheck[1] ? Chess_find_piece(game, King, White)
+    Piece *kingInCheck = game->kingInCheck[0]   ? Chess_find_piece(game, King, ColorBlack)
+                         : game->kingInCheck[1] ? Chess_find_piece(game, King, ColorWhite)
                                                 : NULL;
 
     if (kingInCheck != NULL) {

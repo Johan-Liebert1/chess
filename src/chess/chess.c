@@ -25,9 +25,9 @@ static int KingColsLen = sizeof(KingCols[0]) / sizeof(KingCols[0][0]);
 
 const char *color_diplay(enum Color color) {
     switch (color) {
-        case Black:
+        case ColorBlack:
             return "Black";
-        case White:
+        case ColorWhite:
             return "White";
     }
 
@@ -138,34 +138,34 @@ void Chess_init_board(Chess *chess) {
     for (size_t row = 0; row < CHESS_BOARD_ROWS; row++) {
         for (size_t col = 0; col < CHESS_BOARD_COLS; col++) {
             if ((row + col) % 2 == 0) {
-                chess->board[row][col].color = White;
+                chess->board[row][col].color = ColorWhite;
             }
             chess->board[row][col].piece.pos.row = row;
             chess->board[row][col].piece.pos.col = col;
         }
     }
 
-    PUT_PIECE(chess->board, 0, 0, Rook, White, 4);
-    PUT_PIECE(chess->board, 0, 1, Knight, White, 3);
-    PUT_PIECE(chess->board, 0, 2, Bishop, White, 2);
-    PUT_PIECE(chess->board, 0, 3, Queen, White, 1);
-    PUT_PIECE(chess->board, 0, 4, King, White, 0);
-    PUT_PIECE(chess->board, 0, 5, Bishop, White, 2);
-    PUT_PIECE(chess->board, 0, 6, Knight, White, 3);
-    PUT_PIECE(chess->board, 0, 7, Rook, White, 4);
+    PUT_PIECE(chess->board, 0, 0, Rook, ColorWhite, 4);
+    PUT_PIECE(chess->board, 0, 1, Knight, ColorWhite, 3);
+    PUT_PIECE(chess->board, 0, 2, Bishop, ColorWhite, 2);
+    PUT_PIECE(chess->board, 0, 3, Queen, ColorWhite, 1);
+    PUT_PIECE(chess->board, 0, 4, King, ColorWhite, 0);
+    PUT_PIECE(chess->board, 0, 5, Bishop, ColorWhite, 2);
+    PUT_PIECE(chess->board, 0, 6, Knight, ColorWhite, 3);
+    PUT_PIECE(chess->board, 0, 7, Rook, ColorWhite, 4);
 
-    PUT_PIECE(chess->board, 7, 0, Rook, Black, 10);
-    PUT_PIECE(chess->board, 7, 1, Knight, Black, 9);
-    PUT_PIECE(chess->board, 7, 2, Bishop, Black, 8);
-    PUT_PIECE(chess->board, 7, 3, Queen, Black, 7);
-    PUT_PIECE(chess->board, 7, 4, King, Black, 6);
-    PUT_PIECE(chess->board, 7, 5, Bishop, Black, 8);
-    PUT_PIECE(chess->board, 7, 6, Knight, Black, 9);
-    PUT_PIECE(chess->board, 7, 7, Rook, Black, 10);
+    PUT_PIECE(chess->board, 7, 0, Rook, ColorBlack, 10);
+    PUT_PIECE(chess->board, 7, 1, Knight, ColorBlack, 9);
+    PUT_PIECE(chess->board, 7, 2, Bishop, ColorBlack, 8);
+    PUT_PIECE(chess->board, 7, 3, Queen, ColorBlack, 7);
+    PUT_PIECE(chess->board, 7, 4, King, ColorBlack, 6);
+    PUT_PIECE(chess->board, 7, 5, Bishop, ColorBlack, 8);
+    PUT_PIECE(chess->board, 7, 6, Knight, ColorBlack, 9);
+    PUT_PIECE(chess->board, 7, 7, Rook, ColorBlack, 10);
 
     for (int i = 0; i < CHESS_BOARD_COLS; i++) {
-        PUT_PIECE(chess->board, 1, i, Pawn, White, 5);
-        PUT_PIECE(chess->board, 6, i, Pawn, Black, 11);
+        PUT_PIECE(chess->board, 1, i, Pawn, ColorWhite, 5);
+        PUT_PIECE(chess->board, 6, i, Pawn, ColorBlack, 11);
     }
 }
 
@@ -234,7 +234,7 @@ void Chess_calculate_pawn_moves(Chess *game, Piece *piece, int num_moves) {
     }
 
     // White is always at the top. Even when rotating the board, we only display it upside down
-    int row_adder = piece->color == White ? 1 : -1;
+    int row_adder = piece->color == ColorWhite ? 1 : -1;
 
     int row = piece->pos.row + row_adder;
     int col = piece->pos.col;
