@@ -76,6 +76,9 @@ typedef struct _Piece Piece;
 struct _Cell {
     Piece piece;
     enum Color color;
+    // idx 0 = 1 -> under attack by white
+    // idx 1 = 1 -> under attack by black
+    bool underAttack[2];
 };
 typedef struct _Cell Cell;
 
@@ -95,9 +98,7 @@ typedef struct _Chess Chess;
         }                                                                                                                                            \
     }
 
-static inline bool pos_within_bounds(Pos *pos) {
-    return pos->row >= 0 && pos->row < CHESS_BOARD_ROWS && pos->col >= 0 && pos->col < CHESS_BOARD_COLS;
-}
+static inline bool pos_within_bounds(int row, int col) { return row >= 0 && row < CHESS_BOARD_ROWS && col >= 0 && col < CHESS_BOARD_COLS; }
 
 void Chess_init_board(Chess *chess) {
     for (size_t row = 0; row < CHESS_BOARD_ROWS; row++) {
@@ -107,8 +108,6 @@ void Chess_init_board(Chess *chess) {
             }
         }
     }
-
-    PUT_PIECE(chess->board, 2, 5, Knight, White, 3);
 
     PUT_PIECE(chess->board, 0, 0, Rook, White, 4);
     PUT_PIECE(chess->board, 0, 1, Knight, White, 3);
@@ -128,10 +127,10 @@ void Chess_init_board(Chess *chess) {
     PUT_PIECE(chess->board, 7, 6, Knight, Black, 9);
     PUT_PIECE(chess->board, 7, 7, Rook, Black, 10);
 
-    // for (int i = 0; i < CHESS_BOARD_COLS; i++) {
-    //     PUT_PIECE(chess->board, 1, i, Pawn, Black, 5);
-    //     PUT_PIECE(chess->board, 6, i, Pawn, Black, 11);
-    // }
+    for (int i = 0; i < CHESS_BOARD_COLS; i++) {
+        PUT_PIECE(chess->board, 1, i, Pawn, White, 5);
+        PUT_PIECE(chess->board, 6, i, Pawn, Black, 11);
+    }
 }
 
 void Chess_calculate_rook_moves(Chess *game, Piece *piece, int num_moves) {
@@ -317,6 +316,30 @@ void Chess_calculate_bishop_moves(Chess *game, Piece *piece, int num_moves) {
     }
 }
 
+void Chess_calculate_pawn_moves(Chess *game, Piece *piece, int num_moves) {
+    // TODO: Handle en-passant and promotion
+    piece->num_moves = num_moves;
+
+    if (piece->moves == NULL) {
+        piece->moves = arena_alloc(&game->arena, sizeof(Pos) * 64);
+    }
+
+    // White is always at the top. Even when rotating the board, we only display it upside down
+    int row_adder = piece->color == White ? 1 : -1;
+
+    printf("row_adder: %d\n", row_adder);
+
+    if (pos_within_bounds(piece->pos.row + row_adder, piece->pos.col)) {
+        piece->moves[piece->num_moves] = (Pos){.row = piece->pos.row + row_adder, .col = piece->pos.col};
+        piece->num_moves += 1;
+    }
+
+    if (!piece->has_moved && pos_within_bounds(piece->pos.row + row_adder * 2, piece->pos.col)) {
+        piece->moves[piece->num_moves] = (Pos){.row = piece->pos.row + row_adder * 2, .col = piece->pos.col};
+        piece->num_moves += 1;
+    }
+}
+
 // num_moves -> for consistancy
 void Chess_calculate_knight_moves(Chess *game, Piece *piece, int num_moves) {
     piece->num_moves = num_moves;
@@ -332,7 +355,7 @@ void Chess_calculate_knight_moves(Chess *game, Piece *piece, int num_moves) {
 
             Pos potential_move = (Pos){.row = piece->pos.row + row_adder, .col = piece->pos.col + col_adder};
 
-            if (pos_within_bounds(&potential_move)) {
+            if (pos_within_bounds(potential_move.row, potential_move.col)) {
                 Cell cell = game->board[potential_move.row][potential_move.col];
 
                 if (cell.piece.type == UndefPieceType || cell.piece.color != piece->color) {
@@ -429,8 +452,6 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
 }
 
 void show_piece_moves(SDL_Renderer *renderer, Piece *piece) {
-    printf("num_moves: %d\n", piece->num_moves);
-
     for (int i = 0; i < piece->num_moves; i++) {
         Vec2 cell_coord = get_cell_coordinate(piece->moves[i].row, piece->moves[i].col);
         SDL_Rect move = (SDL_Rect){
@@ -473,7 +494,8 @@ Piece *Chess_calculate_moves(Chess *game, Pos pos) {
             return piece;
 
         case Pawn:
-            return NULL;
+            Chess_calculate_pawn_moves(game, piece, 0);
+            return piece;
     }
 
     return NULL;
