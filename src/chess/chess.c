@@ -1,5 +1,6 @@
 #include "chess.h"
 #include <assert.h>
+#include <stdio.h>
 
 static int KnightRows[4] = {2, 1, -1, -2};
 static int KnightCols[4][2] = {{-1, 1}, {-2, 2}, {-2, 2}, {-1, 1}};
@@ -15,8 +16,60 @@ static int KnightCols[4][2] = {{-1, 1}, {-2, 2}, {-2, 2}, {-1, 1}};
         .sprite_number = sprite_number_val                                                                                                           \
     }
 
-// This expects bounds checks to be done before calling it
-static inline bool is_cell_empty(ChessBoard *board, int row, int col) { return (*board)[row][col].piece.type == UndefPieceType; };
+const char *color_diplay(enum Color color) {
+    switch (color) {
+        case Black:
+            return "Black";
+        case White:
+            return "White";
+    }
+
+    assert(false && "Unknown color");
+}
+
+const char *piece_type_diplay(enum PieceType type) {
+    switch (type) {
+        case UndefPieceType:
+            return "UndefPieceType";
+        case King:
+            return "King";
+        case Queen:
+            return "Queen";
+        case Rook:
+            return "Rook";
+        case Bishop:
+            return "Bishop";
+        case Knight:
+            return "Knight";
+        case Pawn:
+            return "Pawn";
+    }
+
+    assert(false && "Unknown piece type");
+}
+
+void print_piece(Piece *piece) {
+    printf("{ pos: (%d, %d), PieceType: %s, color: %s, has_moved: %d, is_protected: %d }\n", piece->pos.row, piece->pos.col,
+           piece_type_diplay(piece->type), color_diplay(piece->color), piece->has_moved, piece->is_protected);
+}
+
+static inline bool is_cell_empty(ChessBoard *board, int row, int col) {
+    return pos_within_bounds(row, col) && (*board)[row][col].piece.type == UndefPieceType;
+};
+
+// Only cheks whether piece can capture other piece at (row, col). Does not check whether (row, col)
+// is a valid move
+static inline bool can_piece_capture(ChessBoard *board, Piece *piece, int row, int col) {
+    if (!pos_within_bounds(row, col)) {
+        return false;
+    }
+
+    Piece *other = &(*board)[row][col].piece;
+
+    return other->type != UndefPieceType && other->color != piece->color;
+};
+
+void add_move_to_piece(Piece *piece, int row, int col) { piece->moves[piece->num_moves++] = (Pos){row, col}; }
 
 void Chess_init_board(Chess *chess) {
     for (size_t row = 0; row < CHESS_BOARD_ROWS; row++) {
@@ -67,15 +120,14 @@ void Chess_calculate_rook_moves(Chess *game, Piece *piece, int num_moves) {
 
         if (cell.piece.type == UndefPieceType) {
             // NO piece on this square, can move here
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
             continue;
         }
 
         if (cell.piece.color != piece->color) {
             // Opposite colored piece, can capture
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
+            break;
         } else {
             break;
         }
@@ -87,15 +139,14 @@ void Chess_calculate_rook_moves(Chess *game, Piece *piece, int num_moves) {
 
         if (cell.piece.type == UndefPieceType) {
             // NO piece on this square, can move here
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
             continue;
         }
 
         if (cell.piece.color != piece->color) {
             // Opposite colored piece, can capture
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
+            break;
         } else {
             break;
         }
@@ -107,15 +158,14 @@ void Chess_calculate_rook_moves(Chess *game, Piece *piece, int num_moves) {
 
         if (cell.piece.type == UndefPieceType) {
             // NO piece on this square, can move here
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
             continue;
         }
 
         if (cell.piece.color != piece->color) {
             // Opposite colored piece, can capture
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
+            break;
         } else {
             break;
         }
@@ -127,15 +177,13 @@ void Chess_calculate_rook_moves(Chess *game, Piece *piece, int num_moves) {
 
         if (cell.piece.type == UndefPieceType) {
             // NO piece on this square, can move here
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
             continue;
         }
 
         if (cell.piece.color != piece->color) {
             // Opposite colored piece, can capture
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
             break;
         } else {
             break;
@@ -158,15 +206,14 @@ void Chess_calculate_bishop_moves(Chess *game, Piece *piece, int num_moves) {
 
         if (cell.piece.type == UndefPieceType) {
             // NO piece on this square, can move here
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
             continue;
         }
 
         if (cell.piece.color != piece->color) {
             // Opposite colored piece, can capture
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
+            break;
         } else {
             break;
         }
@@ -178,15 +225,14 @@ void Chess_calculate_bishop_moves(Chess *game, Piece *piece, int num_moves) {
 
         if (cell.piece.type == UndefPieceType) {
             // NO piece on this square, can move here
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
             continue;
         }
 
         if (cell.piece.color != piece->color) {
             // Opposite colored piece, can capture
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
+            break;
         } else {
             break;
         }
@@ -198,15 +244,14 @@ void Chess_calculate_bishop_moves(Chess *game, Piece *piece, int num_moves) {
 
         if (cell.piece.type == UndefPieceType) {
             // NO piece on this square, can move here
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
             continue;
         }
 
         if (cell.piece.color != piece->color) {
             // Opposite colored piece, can capture
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
+            break;
         } else {
             break;
         }
@@ -218,15 +263,13 @@ void Chess_calculate_bishop_moves(Chess *game, Piece *piece, int num_moves) {
 
         if (cell.piece.type == UndefPieceType) {
             // NO piece on this square, can move here
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
             continue;
         }
 
         if (cell.piece.color != piece->color) {
             // Opposite colored piece, can capture
-            piece->moves[piece->num_moves] = (Pos){.col = col, .row = row};
-            piece->num_moves += 1;
+            add_move_to_piece(piece, row, col);
             break;
         } else {
             break;
@@ -245,20 +288,26 @@ void Chess_calculate_pawn_moves(Chess *game, Piece *piece, int num_moves) {
     // White is always at the top. Even when rotating the board, we only display it upside down
     int row_adder = piece->color == White ? 1 : -1;
 
-    printf("row_adder: %d\n", row_adder);
-
     int row = piece->pos.row + row_adder;
     int col = piece->pos.col;
 
-    if (pos_within_bounds(row, col) && is_cell_empty(&game->board, row, col)) {
-        piece->moves[piece->num_moves] = (Pos){.row = row, .col = col};
-        piece->num_moves += 1;
+    if (is_cell_empty(&game->board, row, col)) {
+        add_move_to_piece(piece, row, col);
     }
 
     row = piece->pos.row + row_adder * 2;
-    if (!piece->has_moved && pos_within_bounds(row, col) && is_cell_empty(&game->board, row, col)) {
-        piece->moves[piece->num_moves] = (Pos){.row = row, .col = col};
-        piece->num_moves += 1;
+    if (!piece->has_moved && is_cell_empty(&game->board, row, col)) {
+        add_move_to_piece(piece, row, col);
+    }
+
+    // Capture
+    int col_adder[2] = {-1, 1};
+    row = piece->pos.row + row_adder;
+
+    for (int i = 0; i < 2; i++) {
+        if (can_piece_capture(&game->board, piece, row, col + col_adder[i])) {
+            add_move_to_piece(piece, row, col + col_adder[i]);
+        }
     }
 }
 
@@ -281,8 +330,7 @@ void Chess_calculate_knight_moves(Chess *game, Piece *piece, int num_moves) {
                 Cell cell = game->board[potential_move.row][potential_move.col];
 
                 if (cell.piece.type == UndefPieceType || cell.piece.color != piece->color) {
-                    piece->moves[piece->num_moves] = potential_move;
-                    piece->num_moves += 1;
+                    add_move_to_piece(piece, potential_move.row, potential_move.col);
                 }
             }
         }
@@ -329,8 +377,6 @@ Piece *Chess_calculate_moves(Chess *game, Pos pos) {
 }
 
 void Chess_make_move(Chess *game, Piece *piece, Pos pos) {
-    printf("Chess_make_move. Move from: (%d, %d). Move to: (%d, %d)\n", piece->pos.row, piece->pos.col, pos.row, pos.col);
-
     Cell *move_from = &game->board[piece->pos.row][piece->pos.col];
     Cell *move_to = &game->board[pos.row][pos.col];
 
@@ -344,4 +390,3 @@ void Chess_make_move(Chess *game, Piece *piece, Pos pos) {
         }
     }
 }
-

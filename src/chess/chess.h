@@ -1,5 +1,6 @@
 #include "../arena.h"
 #include <SDL2/SDL_rect.h>
+#include <assert.h>
 #include <stdbool.h>
 
 #ifndef CHESS__
@@ -70,6 +71,7 @@ typedef struct _Chess Chess;
 
 static inline bool pos_within_bounds(int row, int col) { return row >= 0 && row < CHESS_BOARD_ROWS && col >= 0 && col < CHESS_BOARD_COLS; }
 
+const char* piece_type_diplay(enum PieceType type);
 Piece *Chess_calculate_moves(Chess *game, Pos pos);
 void Chess_make_move(Chess *game, Piece *piece, Pos pos);
 void Chess_init_board(Chess *chess);
