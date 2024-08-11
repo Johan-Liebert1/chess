@@ -54,8 +54,8 @@ typedef struct _Piece Piece;
 struct _Cell {
     Piece piece;
     enum Color color;
-    // idx 0 = 1 -> under attack by white
-    // idx 1 = 1 -> under attack by black
+    // idx 0 = 1 -> under attack by black
+    // idx 1 = 1 -> under attack by white
     bool underAttack[2];
 };
 typedef struct _Cell Cell;
@@ -66,6 +66,9 @@ struct _Chess {
     ChessBoard board;
     Arena arena;
     Piece *clicked_piece;
+    // idx 0 = 1 -> black king in check
+    // idx 1 = 1 -> white king in check
+    bool kingInCheck[2];
 };
 typedef struct _Chess Chess;
 

@@ -79,10 +79,13 @@ static inline bool can_piece_capture(ChessBoard *board, Piece *piece, int row, i
 void add_move_to_piece(Chess *game, Piece *piece, int row, int col) {
     Cell *cell = &game->board[row][col];
 
-    if (cell->piece.type == UndefPieceType) {
-        cell->underAttack[1 - piece->color] = true;
-    } else {
-        cell->piece.is_protected = true;
+    // Pawn's attacking moves are quite different
+    if (piece->type != Pawn) {
+        if (cell->piece.type == UndefPieceType) {
+            cell->underAttack[piece->color] = true;
+        } else {
+            cell->piece.is_protected = true;
+        }
     }
 
     piece->moves[piece->num_moves++] = (Pos){row, col};
@@ -224,8 +227,20 @@ void Chess_calculate_pawn_moves(Chess *game, Piece *piece, int num_moves) {
     row = piece->pos.row + row_adder;
 
     for (int i = 0; i < 2; i++) {
-        if (can_piece_capture(&game->board, piece, row, col + col_adder[i])) {
-            add_move_to_piece(game, piece, row, col + col_adder[i]);
+        col = piece->pos.col + col_adder[i];
+
+        if (can_piece_capture(&game->board, piece, row, col)) {
+            add_move_to_piece(game, piece, row, col);
+        }
+
+        if (pos_within_bounds(row, col)) {
+            Cell *cell = &game->board[row][col];
+
+            if (cell->piece.type == UndefPieceType) {
+                cell->underAttack[piece->color] = true;
+            } else if (cell->piece.color == piece->color) {
+                cell->piece.is_protected = true;
+            }
         }
     }
 }
@@ -274,7 +289,7 @@ void Chess_calculate_king_moves(Chess *game, Piece *piece, int num_moves) {
                 Cell cell = game->board[potential_move.row][potential_move.col];
 
                 if ((cell.piece.type == UndefPieceType && !cell.underAttack[1 - piece->color]) ||
-                    (cell.piece.color != piece->color && !cell.piece.is_protected)) {
+                    (cell.piece.type != UndefPieceType && cell.piece.color != piece->color && !cell.piece.is_protected)) {
                     add_move_to_piece(game, piece, potential_move.row, potential_move.col);
                 }
             }

@@ -7,6 +7,7 @@
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_timer.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -28,6 +29,8 @@
 #define BOARD_POS_Y_START 40
 
 #define WINDOW_SCALE_FACTOR 100
+
+#define FPS (1000./60.)
 
 int mouse_x;
 int mouse_y;
@@ -210,7 +213,17 @@ int main() {
 
     SDL_Texture *sprites_texture = init_sprites(renderer);
 
+    uint32_t a = SDL_GetTicks();
+    uint32_t b = SDL_GetTicks();
+
+    float delta = 0;
+
     while (!quit) {
+        a = SDL_GetTicks();
+        delta += a - b;
+
+        if (delta < FPS) continue;
+
         while (SDL_PollEvent(&event)) {
             SDL_GetMouseState(&mouse_x, &mouse_y);
 
@@ -264,6 +277,8 @@ int main() {
 
             SDL_RenderPresent(renderer);
         }
+
+        b = SDL_GetTicks();
     }
 
     SDL_Quit();
