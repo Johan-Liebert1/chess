@@ -77,6 +77,8 @@ static inline bool pos_within_bounds(int row, int col) { return row >= 0 && row 
 
 const char* piece_type_diplay(enum PieceType type);
 Piece * Chess_calculate_moves_for_piece(Chess *game, Pos pos);
+Piece * Chess_find_piece(Chess *game, enum PieceType type, enum Color pieceColor);
+bool Chess_is_piece(Piece *piece, enum PieceType type, enum Color pieceColor);
 void Chess_calculate_moves(Chess *game);
 void Chess_make_move(Chess *game, Piece *piece, Pos pos);
 void Chess_init_board(Chess *chess);

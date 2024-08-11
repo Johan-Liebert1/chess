@@ -72,6 +72,36 @@ SDL_Texture *init_sprites(SDL_Renderer *renderer) {
     return sprites_texture;
 }
 
+SDL_Vertex vertices[12] = {0};
+
+static inline void get_vertices_for_capturable_piece(int cell_coord_x, int cell_coord_y) {
+    // top left
+    vertices[0] = (SDL_Vertex){{(float)cell_coord_x, (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[1] = (SDL_Vertex){{(float)(cell_coord_x + CELL_CAPTURE_TRIANGLE_SIZE), (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[2] = (SDL_Vertex){{(float)cell_coord_x, (float)(cell_coord_y + CELL_CAPTURE_TRIANGLE_SIZE)}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+
+    // top right
+    vertices[3] = (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[4] =
+        (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE, (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[5] =
+        (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y + CELL_CAPTURE_TRIANGLE_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+
+    // bottom right
+    vertices[6] = (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[7] = (SDL_Vertex){
+        {(float)cell_coord_x + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[8] = (SDL_Vertex){
+        {(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+
+    // bottom left
+    vertices[9] = (SDL_Vertex){{(float)cell_coord_x, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[10] =
+        (SDL_Vertex){{(float)cell_coord_x, (float)cell_coord_y + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[11] =
+        (SDL_Vertex){{(float)cell_coord_x + CELL_CAPTURE_TRIANGLE_SIZE, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+}
+
 void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_texture, Pos pos) {
     // Draw a border around a square if it's under the mouse cursor
     if (pos.col != -1 && pos.row != -1) {
@@ -111,42 +141,39 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
                 SDL_RenderCopy(renderer, sprites_texture, &cell.piece.sprite_loc, &cell_dst);
             }
 
+            if (game->kingInCheck[0] && Chess_is_piece(&cell.piece, King, Black)) {
+                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 150);
+
+                // Draw 4 triangles inside the cell
+                get_vertices_for_capturable_piece(x, y);
+                if (SDL_RenderGeometry(renderer, NULL, vertices, 12, NULL, 0) != 0) {
+                    printf("SDL_RenderGeometry error: %s\n", SDL_GetError());
+                }
+            }
+
+            if (game->kingInCheck[1] && Chess_is_piece(&cell.piece, King, Black)) {
+                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 150);
+
+                // Draw 4 triangles inside the cell
+                get_vertices_for_capturable_piece(x, y);
+                if (SDL_RenderGeometry(renderer, NULL, vertices, 12, NULL, 0) != 0) {
+                    printf("SDL_RenderGeometry error: %s\n", SDL_GetError());
+                }
+            }
+
             x += CELL_SIZE;
         }
 
         x = BOARD_POS_X_START;
         y += CELL_SIZE;
     }
-}
 
-SDL_Vertex vertices[12] = {0};
+    Piece *kingInCheck = game->kingInCheck[0]   ? Chess_find_piece(game, King, Black)
+                         : game->kingInCheck[1] ? Chess_find_piece(game, King, White)
+                                                : NULL;
 
-static inline void get_vertices_for_capturable_piece(int cell_coord_x, int cell_coord_y) {
-    // top left
-    vertices[0] = (SDL_Vertex){{(float)cell_coord_x, (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-    vertices[1] = (SDL_Vertex){{(float)(cell_coord_x + CELL_CAPTURE_TRIANGLE_SIZE), (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-    vertices[2] = (SDL_Vertex){{(float)cell_coord_x, (float)(cell_coord_y + CELL_CAPTURE_TRIANGLE_SIZE)}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-
-    // top right
-    vertices[3] = (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-    vertices[4] =
-        (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE, (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-    vertices[5] =
-        (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y + CELL_CAPTURE_TRIANGLE_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-
-    // bottom right
-    vertices[6] = (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-    vertices[7] = (SDL_Vertex){
-        {(float)cell_coord_x + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-    vertices[8] = (SDL_Vertex){
-        {(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-
-    // bottom left
-    vertices[9] = (SDL_Vertex){{(float)cell_coord_x, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-    vertices[10] =
-        (SDL_Vertex){{(float)cell_coord_x, (float)cell_coord_y + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
-    vertices[11] =
-        (SDL_Vertex){{(float)cell_coord_x + CELL_CAPTURE_TRIANGLE_SIZE, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    if (kingInCheck != NULL) {
+    }
 }
 
 void show_piece_moves(SDL_Renderer *renderer, Chess *game, Piece *piece) {
@@ -163,11 +190,10 @@ void show_piece_moves(SDL_Renderer *renderer, Chess *game, Piece *piece) {
         if (game->board[piece->moves[i].row][piece->moves[i].col].piece.type == UndefPieceType) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 255, 150);
             SDL_RenderFillRect(renderer, &move);
-        } else {
+        } else if (game->board[piece->moves[i].row][piece->moves[i].col].piece.type != King) {
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 150);
-            // Draw 4 triangles inside the cell
 
-            // Render the geometry
+            // Draw 4 triangles inside the cell
             get_vertices_for_capturable_piece(cell_coord.x, cell_coord.y);
             if (SDL_RenderGeometry(renderer, NULL, vertices, 12, NULL, 0) != 0) {
                 printf("SDL_RenderGeometry error: %s\n", SDL_GetError());

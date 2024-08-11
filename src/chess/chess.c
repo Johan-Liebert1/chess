@@ -55,6 +55,22 @@ const char *piece_type_diplay(enum PieceType type) {
     assert(false && "Unknown piece type");
 }
 
+Piece *Chess_find_piece(Chess *game, enum PieceType type, enum Color pieceColor) {
+    for (int i = 0; i < CHESS_BOARD_ROWS; i++) {
+        for (int j = 0; j < CHESS_BOARD_ROWS; j++) {
+            if (game->board[i][j].piece.type == type && game->board[i][j].piece.color == pieceColor) {
+                return &game->board[i][j].piece;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+bool Chess_is_piece(Piece *piece, enum PieceType type, enum Color pieceColor) {
+    return piece->color == pieceColor && piece->type == type;
+}
+
 void print_piece(Piece *piece) {
     printf("{ pos: (%d, %d), PieceType: %s, color: %s, has_moved: %d, is_protected: %d, piece_moves: %p }\n", piece->pos.row, piece->pos.col,
            piece_type_diplay(piece->type), color_diplay(piece->color), piece->has_moved, piece->is_protected, (void *)piece->moves);
