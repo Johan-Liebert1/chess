@@ -117,13 +117,13 @@ void show_piece_moves(SDL_Renderer *renderer, Piece *piece) {
     for (int i = 0; i < piece->num_moves; i++) {
         Vec2 cell_coord = get_cell_coordinate(piece->moves[i].row, piece->moves[i].col);
         SDL_Rect move = (SDL_Rect){
-            .x = cell_coord.x,
-            .y = cell_coord.y,
+            .x = cell_coord.x + CELL_SIZE / 2 - (CELL_SIZE / 8),
+            .y = cell_coord.y + CELL_SIZE / 2 - (CELL_SIZE / 8),
             .w = CELL_SIZE / 4,
             .h = CELL_SIZE / 4,
         };
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 150);
         SDL_RenderFillRect(renderer, &move);
     }
 }
@@ -150,6 +150,8 @@ int main() {
         SDL_Quit();
         return 1;
     }
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     int quit = 0;
     SDL_Event event;
@@ -193,8 +195,9 @@ int main() {
 
                     Cell *cell = &game.board[pos.row][pos.col];
 
-                    if (game.clicked_piece == NULL) {
-                        game.clicked_piece = Chess_calculate_moves(&game, pos);
+                    if (game.clicked_piece == NULL && cell->piece.type != UndefPieceType) {
+                        game.clicked_piece = &cell->piece;
+                        Chess_calculate_moves(&game);
                     } else if (game.clicked_piece == &cell->piece) {
                         // clicked on the same piece
                         game.clicked_piece = NULL;

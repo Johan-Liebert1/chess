@@ -37,5 +37,5 @@ void *arena_alloc(Arena *a, size_t n_bytes) {
 
     a->allocated_bytes += n_bytes;
 
-    return (char *)a->ptr + n_bytes;
+    return (char *)a->ptr + a->allocated_bytes + n_bytes;
 }
