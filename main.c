@@ -8,6 +8,7 @@
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -70,6 +71,7 @@ struct _Piece {
     uint8_t num_moves;
     // it's 2024, memory is cheap, screw it
     Pos *moves;
+    int sprite_number;
 };
 typedef struct _Piece Piece;
 
@@ -87,18 +89,25 @@ typedef Cell ChessBoard[CHESS_BOARD_ROWS][CHESS_BOARD_COLS];
 struct _Chess {
     ChessBoard board;
     Arena arena;
+    Piece *clicked_piece;
 };
 typedef struct _Chess Chess;
 
-#define PUT_PIECE(board, row_val, col_val, piece_type, color_val, sprite_number)                                                                     \
+#define PUT_PIECE(board, row_val, col_val, piece_type, color_val, sprite_number_val)                                                                 \
     board[row_val][col_val].piece = (Piece) {                                                                                                        \
-        .pos = {.row = row_val, .col = col_val}, .type = piece_type, .color = color_val, .sprite_loc = (SDL_Rect) {                                  \
-            .x = (sprite_number < SPRITE_SHEET_COLS ? sprite_number : sprite_number % SPRITE_SHEET_COLS) * SPRITE_WIDTH,                             \
-            .y = sprite_number < SPRITE_SHEET_COLS ? 0 : SPRITE_HEIGHT, .w = SPRITE_WIDTH, .h = SPRITE_HEIGHT                                        \
-        }                                                                                                                                            \
+        .pos = {.row = row_val, .col = col_val}, .type = piece_type, .color = color_val,                                                             \
+        .sprite_loc =                                                                                                                                \
+            (SDL_Rect){.x = (sprite_number_val < SPRITE_SHEET_COLS ? sprite_number_val : sprite_number_val % SPRITE_SHEET_COLS) * SPRITE_WIDTH,      \
+                       .y = sprite_number_val < SPRITE_SHEET_COLS ? 0 : SPRITE_HEIGHT,                                                               \
+                       .w = SPRITE_WIDTH,                                                                                                            \
+                       .h = SPRITE_HEIGHT},                                                                                                          \
+        .sprite_number = sprite_number_val                                                                                                           \
     }
 
 static inline bool pos_within_bounds(int row, int col) { return row >= 0 && row < CHESS_BOARD_ROWS && col >= 0 && col < CHESS_BOARD_COLS; }
+
+// This expects bounds checks to be done before calling it
+static inline bool is_cell_empty(ChessBoard *board, int row, int col) { return (*board)[row][col].piece.type == UndefPieceType; };
 
 void Chess_init_board(Chess *chess) {
     for (size_t row = 0; row < CHESS_BOARD_ROWS; row++) {
@@ -329,13 +338,17 @@ void Chess_calculate_pawn_moves(Chess *game, Piece *piece, int num_moves) {
 
     printf("row_adder: %d\n", row_adder);
 
-    if (pos_within_bounds(piece->pos.row + row_adder, piece->pos.col)) {
-        piece->moves[piece->num_moves] = (Pos){.row = piece->pos.row + row_adder, .col = piece->pos.col};
+    int row = piece->pos.row + row_adder;
+    int col = piece->pos.col;
+
+    if (pos_within_bounds(row, col) && is_cell_empty(&game->board, row, col)) {
+        piece->moves[piece->num_moves] = (Pos){.row = row, .col = col};
         piece->num_moves += 1;
     }
 
-    if (!piece->has_moved && pos_within_bounds(piece->pos.row + row_adder * 2, piece->pos.col)) {
-        piece->moves[piece->num_moves] = (Pos){.row = piece->pos.row + row_adder * 2, .col = piece->pos.col};
+    row = piece->pos.row + row_adder * 2;
+    if (!piece->has_moved && pos_within_bounds(row, col) && is_cell_empty(&game->board, row, col)) {
+        piece->moves[piece->num_moves] = (Pos){.row = row, .col = col};
         piece->num_moves += 1;
     }
 }
@@ -466,6 +479,9 @@ void show_piece_moves(SDL_Renderer *renderer, Piece *piece) {
     }
 }
 
+// Calculates moves of the piece that has been clicked
+// and returns a pointer to that piece
+// returns NULL if the clicked square does not have a piece
 Piece *Chess_calculate_moves(Chess *game, Pos pos) {
     Piece *piece = &game->board[pos.row][pos.col].piece;
 
@@ -474,6 +490,7 @@ Piece *Chess_calculate_moves(Chess *game, Pos pos) {
             return NULL;
 
         case King:
+            assert(false && "Moves for king is not implemtend");
             return NULL;
 
         case Queen:
@@ -499,6 +516,23 @@ Piece *Chess_calculate_moves(Chess *game, Pos pos) {
     }
 
     return NULL;
+}
+
+void Chess_make_move(Chess *game, Piece *piece, Pos pos) {
+    printf("Chess_make_move. Move from: (%d, %d). Move to: (%d, %d)\n", piece->pos.row, piece->pos.col, pos.row, pos.col);
+
+    Cell *move_from = &game->board[piece->pos.row][piece->pos.col];
+    Cell *move_to = &game->board[pos.row][pos.col];
+
+    for (int i = 0; i < piece->num_moves; i++) {
+        if (piece->moves[i].row == pos.row && piece->moves[i].col == pos.col) {
+            move_to->piece = PUT_PIECE(game->board, pos.row, pos.col, move_from->piece.type, move_from->piece.color, move_from->piece.sprite_number);
+            move_to->piece.has_moved = true;
+
+            move_from->piece = (Piece){0};
+            break;
+        }
+    }
 }
 
 int main() {
@@ -541,7 +575,6 @@ int main() {
             SDL_GetMouseState(&mouse_x, &mouse_y);
 
             Pos pos = mouse_pos_to_cell();
-            Piece *piece = 0;
 
             switch (event.type) {
                 case SDL_QUIT:
@@ -561,10 +594,22 @@ int main() {
                 }
 
                 case SDL_MOUSEBUTTONDOWN: {
-                    Piece *hi = Chess_calculate_moves(&game, pos);
+                    if (!pos_within_bounds(pos.row, pos.col)) {
+                        break;
+                    }
 
-                    if (piece == NULL)
-                        piece = hi;
+                    Cell *cell = &game.board[pos.row][pos.col];
+
+                    if (game.clicked_piece == NULL) {
+                        game.clicked_piece = Chess_calculate_moves(&game, pos);
+                    } else if (game.clicked_piece == &cell->piece) {
+                        // clicked on the same piece
+                        game.clicked_piece = NULL;
+                    } else {
+                        // Player has alredy clicked a piece, now he's clicked again. Might be a move
+                        Chess_make_move(&game, game.clicked_piece, pos);
+                        game.clicked_piece = NULL;
+                    }
 
                     break;
                 }
@@ -572,8 +617,8 @@ int main() {
 
             draw_chess_board(&game, renderer, sprites_texture, pos);
 
-            if (piece != NULL) {
-                show_piece_moves(renderer, piece);
+            if (game.clicked_piece != NULL) {
+                show_piece_moves(renderer, game.clicked_piece);
             }
 
             SDL_RenderPresent(renderer);
