@@ -76,6 +76,8 @@ void Chess_init_board(Chess *chess) {
         for (size_t col = 0; col < CHESS_BOARD_COLS; col++) {
             if ((row + col) % 2 == 0) {
                 chess->board[row][col].color = White;
+                chess->board[row][col].piece.pos.row = row;
+                chess->board[row][col].piece.pos.col = col;
             }
         }
     }
@@ -104,75 +106,9 @@ void Chess_init_board(Chess *chess) {
     }
 }
 
-void Chess_calculate_rook_moves(Chess *game, Piece *piece, int num_moves) {
-    piece->num_moves = num_moves;
-
-    if (piece->moves == NULL) {
-        piece->moves = arena_alloc(&game->arena, sizeof(Pos) * 64);
-    }
-
-    int row = piece->pos.row;
-    int col = piece->pos.col;
-
-    // Top
-    for (int row = piece->pos.row - 1; row >= 0; row--) {
-        Cell cell = game->board[row][col];
-
-        if (cell.piece.type == UndefPieceType) {
-            // NO piece on this square, can move here
-            add_move_to_piece(piece, row, col);
-            continue;
-        }
-
-        if (cell.piece.color != piece->color) {
-            // Opposite colored piece, can capture
-            add_move_to_piece(piece, row, col);
-            break;
-        } else {
-            break;
-        }
-    }
-
-    // Left
-    for (int col = piece->pos.col - 1; col >= 0; col--) {
-        Cell cell = game->board[row][col];
-
-        if (cell.piece.type == UndefPieceType) {
-            // NO piece on this square, can move here
-            add_move_to_piece(piece, row, col);
-            continue;
-        }
-
-        if (cell.piece.color != piece->color) {
-            // Opposite colored piece, can capture
-            add_move_to_piece(piece, row, col);
-            break;
-        } else {
-            break;
-        }
-    }
-
-    // Bottom
-    for (int row = piece->pos.row + 1; row < CHESS_BOARD_ROWS; row++) {
-        Cell cell = game->board[row][col];
-
-        if (cell.piece.type == UndefPieceType) {
-            // NO piece on this square, can move here
-            add_move_to_piece(piece, row, col);
-            continue;
-        }
-
-        if (cell.piece.color != piece->color) {
-            // Opposite colored piece, can capture
-            add_move_to_piece(piece, row, col);
-            break;
-        } else {
-            break;
-        }
-    }
-
-    // Right
-    for (int col = piece->pos.col + 1; col < CHESS_BOARD_COLS; col++) {
+void process_moves(Chess *game, Piece *piece, int row_adder, int col_adder) {
+    for (int row = piece->pos.row + row_adder, col = piece->pos.col + col_adder;
+         row >= 0 && row < CHESS_BOARD_ROWS && col >= 0 && col < CHESS_BOARD_COLS; row += row_adder, col += col_adder) {
         Cell cell = game->board[row][col];
 
         if (cell.piece.type == UndefPieceType) {
@@ -191,6 +127,23 @@ void Chess_calculate_rook_moves(Chess *game, Piece *piece, int num_moves) {
     }
 }
 
+void Chess_calculate_rook_moves(Chess *game, Piece *piece, int num_moves) {
+    piece->num_moves = num_moves;
+
+    if (piece->moves == NULL) {
+        piece->moves = arena_alloc(&game->arena, sizeof(Pos) * 64);
+    }
+
+    // Top
+    process_moves(game, piece, -1, 0);
+    // Left
+    process_moves(game, piece, 0, -1);
+    // Bottom
+    process_moves(game, piece, 1, 0);
+    // Right
+    process_moves(game, piece, 0, 1);
+}
+
 // num_moves = where to start filling the moves from
 // for the Queen
 void Chess_calculate_bishop_moves(Chess *game, Piece *piece, int num_moves) {
@@ -201,80 +154,13 @@ void Chess_calculate_bishop_moves(Chess *game, Piece *piece, int num_moves) {
     }
 
     // Top Right
-    for (int row = piece->pos.row - 1, col = piece->pos.col + 1; row >= 0 && col < CHESS_BOARD_COLS; row--, col++) {
-        Cell cell = game->board[row][col];
-
-        if (cell.piece.type == UndefPieceType) {
-            // NO piece on this square, can move here
-            add_move_to_piece(piece, row, col);
-            continue;
-        }
-
-        if (cell.piece.color != piece->color) {
-            // Opposite colored piece, can capture
-            add_move_to_piece(piece, row, col);
-            break;
-        } else {
-            break;
-        }
-    }
-
-    // top left
-    for (int row = piece->pos.row - 1, col = piece->pos.col - 1; row >= 0 && col >= 0; row--, col--) {
-        Cell cell = game->board[row][col];
-
-        if (cell.piece.type == UndefPieceType) {
-            // NO piece on this square, can move here
-            add_move_to_piece(piece, row, col);
-            continue;
-        }
-
-        if (cell.piece.color != piece->color) {
-            // Opposite colored piece, can capture
-            add_move_to_piece(piece, row, col);
-            break;
-        } else {
-            break;
-        }
-    }
-
-    // bottom left
-    for (int row = piece->pos.row + 1, col = piece->pos.col - 1; row < CHESS_BOARD_ROWS && col >= 0; row++, col--) {
-        Cell cell = game->board[row][col];
-
-        if (cell.piece.type == UndefPieceType) {
-            // NO piece on this square, can move here
-            add_move_to_piece(piece, row, col);
-            continue;
-        }
-
-        if (cell.piece.color != piece->color) {
-            // Opposite colored piece, can capture
-            add_move_to_piece(piece, row, col);
-            break;
-        } else {
-            break;
-        }
-    }
-
-    // bottom right
-    for (int row = piece->pos.row + 1, col = piece->pos.col + 1; row < CHESS_BOARD_ROWS && col < CHESS_BOARD_COLS; row++, col++) {
-        Cell cell = game->board[row][col];
-
-        if (cell.piece.type == UndefPieceType) {
-            // NO piece on this square, can move here
-            add_move_to_piece(piece, row, col);
-            continue;
-        }
-
-        if (cell.piece.color != piece->color) {
-            // Opposite colored piece, can capture
-            add_move_to_piece(piece, row, col);
-            break;
-        } else {
-            break;
-        }
-    }
+    process_moves(game, piece, -1, 1);
+    // Top Left
+    process_moves(game, piece, -1, -1);
+    // Bottom Right
+    process_moves(game, piece, 1, 1);
+    // Bottom Left
+    process_moves(game, piece, 1, -1);
 }
 
 void Chess_calculate_pawn_moves(Chess *game, Piece *piece, int num_moves) {
