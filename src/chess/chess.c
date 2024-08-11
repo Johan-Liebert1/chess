@@ -318,10 +318,6 @@ Piece *Chess_calculate_moves_for_piece(Chess *game, Pos pos) {
             break;
     }
 
-    if (piece->type != UndefPieceType) {
-        print_piece(piece);
-    }
-
     return piece->type == UndefPieceType ? NULL : piece;
 }
 

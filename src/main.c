@@ -20,6 +20,9 @@
 #define COLOR_WHITE 255, 255, 255, 255
 
 #define CELL_SIZE 100
+#define CELL_CAPTURE_TRIANGLE_SIZE (CELL_SIZE / 5.)
+
+#define CELL_CAPTURE_TRIANGE_COLOR ((SDL_Color){255, 0, 0, 150})
 
 #define BOARD_POS_X_START 10
 #define BOARD_POS_Y_START 40
@@ -113,9 +116,40 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
     }
 }
 
-void show_piece_moves(SDL_Renderer *renderer, Piece *piece) {
+SDL_Vertex vertices[12] = {0};
+
+static inline void get_vertices_for_capturable_piece(int cell_coord_x, int cell_coord_y) {
+    // top left
+    vertices[0] = (SDL_Vertex){{(float)cell_coord_x, (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[1] = (SDL_Vertex){{(float)(cell_coord_x + CELL_CAPTURE_TRIANGLE_SIZE), (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[2] = (SDL_Vertex){{(float)cell_coord_x, (float)(cell_coord_y + CELL_CAPTURE_TRIANGLE_SIZE)}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+
+    // top right
+    vertices[3] = (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[4] =
+        (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE, (float)cell_coord_y}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[5] =
+        (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y + CELL_CAPTURE_TRIANGLE_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+
+    // bottom right
+    vertices[6] = (SDL_Vertex){{(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[7] = (SDL_Vertex){
+        {(float)cell_coord_x + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[8] = (SDL_Vertex){
+        {(float)cell_coord_x + CELL_SIZE, (float)cell_coord_y + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+
+    // bottom left
+    vertices[9] = (SDL_Vertex){{(float)cell_coord_x, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[10] =
+        (SDL_Vertex){{(float)cell_coord_x, (float)cell_coord_y + CELL_SIZE - CELL_CAPTURE_TRIANGLE_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+    vertices[11] =
+        (SDL_Vertex){{(float)cell_coord_x + CELL_CAPTURE_TRIANGLE_SIZE, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
+}
+
+void show_piece_moves(SDL_Renderer *renderer, Chess *game, Piece *piece) {
     for (int i = 0; i < piece->num_moves; i++) {
         Vec2 cell_coord = get_cell_coordinate(piece->moves[i].row, piece->moves[i].col);
+
         SDL_Rect move = (SDL_Rect){
             .x = cell_coord.x + CELL_SIZE / 2 - (CELL_SIZE / 8),
             .y = cell_coord.y + CELL_SIZE / 2 - (CELL_SIZE / 8),
@@ -123,8 +157,19 @@ void show_piece_moves(SDL_Renderer *renderer, Piece *piece) {
             .h = CELL_SIZE / 4,
         };
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 150);
-        SDL_RenderFillRect(renderer, &move);
+        if (game->board[piece->moves[i].row][piece->moves[i].col].piece.type == UndefPieceType) {
+            SDL_SetRenderDrawColor(renderer, 0, 0, 255, 150);
+            SDL_RenderFillRect(renderer, &move);
+        } else {
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 150);
+            // Draw 4 triangles inside the cell
+
+            // Render the geometry
+            get_vertices_for_capturable_piece(cell_coord.x, cell_coord.y);
+            if (SDL_RenderGeometry(renderer, NULL, vertices, 12, NULL, 0) != 0) {
+                printf("SDL_RenderGeometry error: %s\n", SDL_GetError());
+            }
+        }
     }
 }
 
@@ -201,7 +246,7 @@ int main() {
                     } else if (game.clicked_piece == &cell->piece) {
                         // clicked on the same piece
                         game.clicked_piece = NULL;
-                    } else {
+                    } else if (game.clicked_piece != NULL) {
                         // Player has alredy clicked a piece, now he's clicked again. Might be a move
                         Chess_make_move(&game, game.clicked_piece, pos);
                         game.clicked_piece = NULL;
@@ -214,7 +259,7 @@ int main() {
             draw_chess_board(&game, renderer, sprites_texture, pos);
 
             if (game.clicked_piece != NULL) {
-                show_piece_moves(renderer, game.clicked_piece);
+                show_piece_moves(renderer, &game, game.clicked_piece);
             }
 
             SDL_RenderPresent(renderer);
