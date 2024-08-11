@@ -30,7 +30,7 @@
 
 #define WINDOW_SCALE_FACTOR 100
 
-#define FPS (1000./60.)
+#define FPS (1000. / 60.)
 
 int mouse_x;
 int mouse_y;
@@ -207,9 +207,10 @@ int main() {
     Chess game = {0};
 
     // enough to store moves for all pieces
-    game.arena = arena_init(CHESS_BOARD_COLS * CHESS_BOARD_ROWS * sizeof(Pos) * 32);
+    game.arena = arena_init(CHESS_BOARD_COLS * CHESS_BOARD_ROWS * sizeof(Pos) * 33);
 
     Chess_init_board(&game);
+    Chess_calculate_moves(&game);
 
     SDL_Texture *sprites_texture = init_sprites(renderer);
 
@@ -222,7 +223,9 @@ int main() {
         a = SDL_GetTicks();
         delta += a - b;
 
-        if (delta < FPS) continue;
+        if (delta < FPS) {
+            continue;
+        }
 
         while (SDL_PollEvent(&event)) {
             SDL_GetMouseState(&mouse_x, &mouse_y);
@@ -255,7 +258,6 @@ int main() {
 
                     if (game.clicked_piece == NULL && cell->piece.type != UndefPieceType) {
                         game.clicked_piece = &cell->piece;
-                        Chess_calculate_moves(&game);
                     } else if (game.clicked_piece == &cell->piece) {
                         // clicked on the same piece
                         game.clicked_piece = NULL;

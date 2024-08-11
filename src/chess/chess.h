@@ -66,9 +66,10 @@ struct _Chess {
     ChessBoard board;
     Arena arena;
     Piece *clicked_piece;
-    // idx 0 = 1 -> black king in check
-    // idx 1 = 1 -> white king in check
-    bool kingInCheck[2];
+
+    // idx 0 != NULL -> black king in check
+    // idx 1 != NULL -> white king in check
+    Piece* kingInCheck[2];
 };
 typedef struct _Chess Chess;
 

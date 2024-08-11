@@ -79,16 +79,26 @@ static inline bool can_piece_capture(ChessBoard *board, Piece *piece, int row, i
 void add_move_to_piece(Chess *game, Piece *piece, int row, int col) {
     Cell *cell = &game->board[row][col];
 
+    piece->moves[piece->num_moves++] = (Pos){row, col};
+
     // Pawn's attacking moves are quite different
-    if (piece->type != Pawn) {
-        if (cell->piece.type == UndefPieceType) {
-            cell->underAttack[piece->color] = true;
-        } else {
-            cell->piece.is_protected = true;
-        }
+    if (piece->type == Pawn) {
+        return;
     }
 
-    piece->moves[piece->num_moves++] = (Pos){row, col};
+    if (cell->piece.type == UndefPieceType) {
+        cell->underAttack[piece->color] = true;
+        return;
+    }
+
+    if (cell->piece.color == piece->color) {
+        cell->piece.is_protected = true;
+        return;
+    }
+
+    if (cell->piece.type == King) {
+        game->kingInCheck[1 - piece->color] = piece;
+    }
 }
 
 void Chess_calculate_moves(Chess *chess) {
@@ -350,4 +360,6 @@ void Chess_make_move(Chess *game, Piece *piece, Pos pos) {
             break;
         }
     }
+
+    Chess_calculate_moves(game);
 }
