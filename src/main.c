@@ -167,13 +167,6 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
         x = BOARD_POS_X_START;
         y += CELL_SIZE;
     }
-
-    Piece *kingInCheck = game->kingInCheck[0]   ? Chess_find_piece(game, King, ColorBlack)
-                         : game->kingInCheck[1] ? Chess_find_piece(game, King, ColorWhite)
-                                                : NULL;
-
-    if (kingInCheck != NULL) {
-    }
 }
 
 void show_piece_moves(SDL_Renderer *renderer, Chess *game, Piece *piece) {
@@ -233,7 +226,7 @@ int main() {
     Chess game = {0};
 
     // enough to store moves for all pieces
-    game.arena = arena_init(CHESS_BOARD_COLS * CHESS_BOARD_ROWS * sizeof(Pos) * 33);
+    game.arena = arena_init(CHESS_BOARD_COLS * CHESS_BOARD_ROWS * sizeof(Pos) * 35);
 
     Chess_init_board(&game);
     Chess_calculate_moves(&game);
@@ -289,8 +282,13 @@ int main() {
                         game.clicked_piece = NULL;
                     } else if (game.clicked_piece != NULL) {
                         // Player has alredy clicked a piece, now he's clicked again. Might be a move
-                        Chess_make_move(&game, game.clicked_piece, pos);
-                        game.clicked_piece = NULL;
+                        if (Chess_make_move(&game, game.clicked_piece, pos)) {
+                            // move was leagal
+                            game.clicked_piece = NULL;
+                        } else if (cell->piece.type != UndefPieceType) {
+                            // move was illegal. Reset the clicked_piece if click was on another piece
+                            game.clicked_piece = &cell->piece;
+                        }
                     }
 
                     break;
