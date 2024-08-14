@@ -188,11 +188,7 @@ void Chess_get_available_moves_for_color(Chess *game, enum Color color, Piece *k
         }
 
         // If a Knight is checking a king, the only moves are to move the king or take the Knight
-        case Knight: {
-            add_move_to_only_moves(pieceCheckingKing->pos.row, pieceCheckingKing->pos.col, moves_array, num_moves);
-            break;
-        }
-
+        case Knight:
         case Pawn: {
             add_move_to_only_moves(pieceCheckingKing->pos.row, pieceCheckingKing->pos.col, moves_array, num_moves);
             break;

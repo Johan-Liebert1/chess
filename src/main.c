@@ -8,6 +8,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_ttf.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -17,18 +18,19 @@
 
 #include "chess/chess.h"
 
-#define COLOR_BLACK 0, 0, 0, 255
-#define COLOR_WHITE 255, 255, 255, 255
+#define COLOR_BLACK ((SDL_Color){0, 0, 0, 255})
+#define COLOR_WHITE ((SDL_Color){255, 255, 255, 255})
 
-#define CELL_SIZE 100
+#define CELL_SIZE 120
 #define CELL_CAPTURE_TRIANGLE_SIZE (CELL_SIZE / 5.)
+#define CELL_FONT_SIZE (CELL_SIZE / 5.)
 
 #define CELL_CAPTURE_TRIANGE_COLOR ((SDL_Color){255, 0, 0, 150})
 
 #define BOARD_POS_X_START 10
 #define BOARD_POS_Y_START 40
 
-#define WINDOW_SCALE_FACTOR 100
+#define WINDOW_SCALE_FACTOR 120
 
 #define FPS (1000. / 60.)
 
@@ -102,7 +104,7 @@ static inline void get_vertices_for_capturable_piece(int cell_coord_x, int cell_
         (SDL_Vertex){{(float)cell_coord_x + CELL_CAPTURE_TRIANGLE_SIZE, (float)cell_coord_y + CELL_SIZE}, CELL_CAPTURE_TRIANGE_COLOR, {1, 1}};
 }
 
-void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_texture, Pos pos) {
+void draw_chess_board(Chess *game, SDL_Renderer *renderer, TTF_Font *font, SDL_Texture *sprites_texture, Pos pos) {
     // Draw a border around a square if it's under the mouse cursor
     if (pos.col != -1 && pos.row != -1) {
         // find the cell
@@ -115,6 +117,8 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
 
     int x = BOARD_POS_X_START;
     int y = BOARD_POS_Y_START;
+
+    char buf[2];
 
     for (int row = 0; row < CHESS_BOARD_ROWS; row++) {
         for (int col = 0; col < CHESS_BOARD_COLS; col++) {
@@ -159,6 +163,39 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, SDL_Texture *sprites_
                 if (SDL_RenderGeometry(renderer, NULL, vertices, 12, NULL, 0) != 0) {
                     printf("SDL_RenderGeometry error: %s\n", SDL_GetError());
                 }
+            }
+
+            if (row == CHESS_BOARD_ROWS - 1) {
+                snprintf(buf, 2, "%c", 'a' + col);
+                SDL_Surface *surfaceMessage = TTF_RenderText_Blended(font, buf, cell.color == ColorWhite ? COLOR_BLACK : COLOR_WHITE);
+                SDL_Texture *message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+
+                cell_dst.x = x + CELL_SIZE - CELL_FONT_SIZE;
+                cell_dst.y = y + CELL_SIZE - CELL_FONT_SIZE * 2;
+                cell_dst.w = CELL_FONT_SIZE;
+                cell_dst.h = CELL_FONT_SIZE * 2;
+
+                SDL_RenderCopy(renderer, message, NULL, &cell_dst);
+
+                SDL_FreeSurface(surfaceMessage);
+                SDL_DestroyTexture(message);
+            }
+
+
+            if (col == 0) {
+                snprintf(buf, 2, "%d", CHESS_BOARD_ROWS - row);
+                SDL_Surface *surfaceMessage = TTF_RenderText_Blended(font, buf, cell.color == ColorWhite ? COLOR_BLACK : COLOR_WHITE);
+                SDL_Texture *message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+
+                cell_dst.x = x;
+                cell_dst.y = y + CELL_SIZE - CELL_FONT_SIZE * 2;
+                cell_dst.w = CELL_FONT_SIZE;
+                cell_dst.h = CELL_FONT_SIZE * 2;
+
+                SDL_RenderCopy(renderer, message, NULL, &cell_dst);
+
+                SDL_FreeSurface(surfaceMessage);
+                SDL_DestroyTexture(message);
             }
 
             x += CELL_SIZE;
@@ -219,6 +256,16 @@ int main() {
     }
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    TTF_Init();
+    // this opens a font style and sets a size
+    TTF_Font *font = TTF_OpenFont("./src/assets/Arial.ttf", 10);
+
+    if (font == NULL) {
+        printf("Failed to load font with error: %s\n", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
 
     int quit = 0;
     SDL_Event event;
@@ -295,7 +342,7 @@ int main() {
                 }
             }
 
-            draw_chess_board(&game, renderer, sprites_texture, pos);
+            draw_chess_board(&game, renderer, font, sprites_texture, pos);
 
             if (game.clicked_piece != NULL) {
                 show_piece_moves(renderer, &game, game.clicked_piece);
@@ -307,5 +354,6 @@ int main() {
         b = SDL_GetTicks();
     }
 
+    TTF_CloseFont(font);
     SDL_Quit();
 }
