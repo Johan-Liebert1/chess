@@ -1,4 +1,5 @@
 #include "chess.h"
+#include <stdio.h>
 
 // clang-format off
 static int directions[8][2] = {
@@ -17,7 +18,6 @@ static int KingRows[3] = {1, -1, 0};
 static int KingCols[3][3] = {{-1, 0, 1}, {-1, 0, 1}, {-1, 0, 1}};
 static int KingRowsLen = sizeof(KingRows) / sizeof(KingRows[0]);
 static int KingColsLen = sizeof(KingCols[0]) / sizeof(KingCols[0][0]);
-
 
 void Chess_calculate_king_moves(Chess *game, Piece *piece, int num_moves) {
     piece->num_moves = num_moves;
@@ -49,18 +49,14 @@ void Chess_calculate_king_moves(Chess *game, Piece *piece, int num_moves) {
 void Chess_rook_bishop_queen_check_check(Chess *game, Piece *king, int row_adder, int col_adder) {
     for (int row = king->pos.row + row_adder, col = king->pos.col + col_adder;
          row >= 0 && row < CHESS_BOARD_ROWS && col >= 0 && col < CHESS_BOARD_COLS; row += row_adder, col += col_adder) {
-        Cell cell = game->board[row][col];
+        Cell *cell = &game->board[row][col];
 
-        switch (cell.piece.type) {
+        switch (cell->piece.type) {
             case Rook:
             case Bishop:
             case Queen: {
-                if (cell.piece.color != king->color) {
-                    game->kingInCheck[king->color] = &cell.piece;
-
-                    printf("King in check by piece: ");
-                    print_piece(&cell.piece);
-
+                if (cell->piece.color != king->color) {
+                    game->kingInCheck[king->color] = &cell->piece;
                     return;
                 }
 
@@ -77,9 +73,30 @@ void Chess_rook_bishop_queen_check_check(Chess *game, Piece *king, int row_adder
     }
 }
 
+void Chess_knight_check_check(Chess *game, Piece *king) {
+    for (int row_idx = 0; row_idx < KnightRowsLen; row_idx++) {
+        for (int col_idx = 0; col_idx < KnightColsLen; col_idx++) {
+            int row_adder = KnightRows[row_idx];
+            int col_adder = KnightCols[row_idx][col_idx];
+
+            Pos potential_check = (Pos){.row = king->pos.row + row_adder, .col = king->pos.col + col_adder};
+
+            if (pos_within_bounds(potential_check.row, potential_check.col)) {
+                Cell *cell = &game->board[potential_check.row][potential_check.col];
+
+                if (cell->piece.type == Knight && cell->piece.color != king->color) {
+                    game->kingInCheck[king->color] = &cell->piece;
+                    return;
+                }
+            }
+        }
+    }
+}
 
 void Chess_check_for_checks_after_move(Chess *chess, Piece *king) {
     for (int i = 0; i < (int)(sizeof(directions) / sizeof(directions[0])); i++) {
         Chess_rook_bishop_queen_check_check(chess, king, directions[i][0], directions[i][1]);
     }
+
+    Chess_knight_check_check(chess, king);
 }

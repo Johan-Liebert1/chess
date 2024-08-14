@@ -1,8 +1,7 @@
 #include "chess.h"
+#include <stdio.h>
 
-bool is_cell_empty(ChessBoard *board, int row, int col) {
-    return pos_within_bounds(row, col) && (*board)[row][col].piece.type == UndefPieceType;
-}
+bool is_cell_empty(ChessBoard *board, int row, int col) { return pos_within_bounds(row, col) && (*board)[row][col].piece.type == UndefPieceType; }
 
 // Only cheks whether piece can capture other piece at (row, col). Does not check whether (row, col)
 // is a valid move
@@ -27,6 +26,8 @@ const char *color_diplay(enum Color color) {
     assert(false && "Unknown color");
 }
 
+char buf[100];
+
 const char *piece_type_diplay(enum PieceType type) {
     switch (type) {
         case UndefPieceType:
@@ -43,9 +44,11 @@ const char *piece_type_diplay(enum PieceType type) {
             return "Knight";
         case Pawn:
             return "Pawn";
+        default: {
+            snprintf(buf, 100, "Unknown piece type: %d\n", type);
+            return buf;
+        }
     }
-
-    assert(false && "Unknown piece type");
 }
 
 void print_piece(Piece *piece) {

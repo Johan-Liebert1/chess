@@ -56,12 +56,7 @@ void add_move_to_piece(Chess *game, Piece *piece, int row, int col) {
         cell->piece.is_protected = true;
         return;
     }
-
-    if (cell->piece.type == King) {
-        game->kingInCheck[1 - piece->color] = piece;
-    }
 }
-
 
 // Calculates moves of the piece that has been clicked
 // and returns a pointer to that piece
@@ -100,17 +95,53 @@ Piece *Chess_calculate_moves_for_piece(Chess *game, Piece *piece) {
     return piece->type == UndefPieceType ? NULL : piece;
 }
 
-
 void add_move_to_only_moves(int row, int col, Pos *move_array, int *move_idx) {
     move_array[*move_idx] = (Pos){row, col};
     (*move_idx)++;
 }
 
+void process_only_moves(Chess *game, Piece *piece, int row_adder, int col_adder, Pos *move_array, int *move_idx) {
+    for (int row = piece->pos.row + row_adder, col = piece->pos.col + col_adder;
+         row >= 0 && row < CHESS_BOARD_ROWS && col >= 0 && col < CHESS_BOARD_COLS; row += row_adder, col += col_adder) {
+
+        add_move_to_only_moves(row, col, move_array, move_idx);
+
+        if (game->board[row][col].piece.type != UndefPieceType) {
+            // we break after adding the Capturing move
+            break;
+        }
+    }
+}
+
+void handle_moves_queen_bishop_rook_check(Chess *game, Piece *king, Piece *pieceCheckingKing, Pos *move_array, int *move_idx) {
+    // available moves are
+    // 1. Blocking the check
+    // 2. Capturing the piece, unless it's a double check
+
+    int row_adder = 0;
+    int col_adder = 0;
+
+    if (king->pos.row == pieceCheckingKing->pos.row) {
+        col_adder = (pieceCheckingKing->pos.col - king->pos.col) / abs(pieceCheckingKing->pos.col - king->pos.col);
+    } else if (king->pos.col == pieceCheckingKing->pos.col) {
+        row_adder = (pieceCheckingKing->pos.row - king->pos.row) / abs(pieceCheckingKing->pos.row - king->pos.row);
+    } else {
+        col_adder = (pieceCheckingKing->pos.col - king->pos.col) / abs(pieceCheckingKing->pos.col - king->pos.col);
+        row_adder = (pieceCheckingKing->pos.row - king->pos.row) / abs(pieceCheckingKing->pos.row - king->pos.row);
+    }
+
+    process_only_moves(game, king, row_adder, col_adder, move_array, move_idx);
+}
+
 void Chess_get_available_moves_for_color(Chess *game, enum Color color, Piece *king, Piece *pieceCheckingKing) {
     (void)king;
 
-    Pos *moves = NULL;
-    int *move_num;
+    if (pieceCheckingKing == NULL) {
+        return;
+    }
+
+    Pos *moves_array = NULL;
+    int *num_moves;
 
     switch (color) {
         case ColorBlack: {
@@ -119,8 +150,8 @@ void Chess_get_available_moves_for_color(Chess *game, enum Color color, Piece *k
             }
 
             game->num_available_black_moves = 0;
-            moves = game->only_available_black_moves;
-            move_num = &game->num_available_black_moves;
+            moves_array = game->only_available_black_moves;
+            num_moves = &game->num_available_black_moves;
             break;
         }
 
@@ -130,13 +161,14 @@ void Chess_get_available_moves_for_color(Chess *game, enum Color color, Piece *k
             }
 
             game->num_available_white_moves = 0;
-            moves = game->only_available_white_moves;
-            move_num = &game->num_available_white_moves;
+            moves_array = game->only_available_white_moves;
+            num_moves = &game->num_available_white_moves;
             break;
         }
     }
 
-    printf("Piece checking king\n");
+    printf("Chess_get_available_moves_for_color: %s.\n", color_diplay(color));
+    printf("Piece checking king: ");
     print_piece(pieceCheckingKing);
 
     switch (pieceCheckingKing->type) {
@@ -148,26 +180,21 @@ void Chess_get_available_moves_for_color(Chess *game, enum Color color, Piece *k
             assert(false && "King cannot check another king");
         }
 
-        case Queen: {
-            break;
-        }
-
-        case Rook: {
-            break;
-        }
-
+        case Queen:
+        case Rook:
         case Bishop: {
+            handle_moves_queen_bishop_rook_check(game, king, pieceCheckingKing, moves_array, num_moves);
             break;
         }
 
         // If a Knight is checking a king, the only moves are to move the king or take the Knight
         case Knight: {
-            add_move_to_only_moves(pieceCheckingKing->pos.row, pieceCheckingKing->pos.col, moves, move_num);
+            add_move_to_only_moves(pieceCheckingKing->pos.row, pieceCheckingKing->pos.col, moves_array, num_moves);
             break;
         }
 
         case Pawn: {
-            add_move_to_only_moves(pieceCheckingKing->pos.row, pieceCheckingKing->pos.col, moves, move_num);
+            add_move_to_only_moves(pieceCheckingKing->pos.row, pieceCheckingKing->pos.col, moves_array, num_moves);
             break;
         }
     }
@@ -213,6 +240,9 @@ void Chess_calculate_moves(Chess *chess) {
             }
         }
     }
+
+    chess->kingInCheck[0] = NULL;
+    chess->kingInCheck[1] = NULL;
 
     Chess_check_for_checks_after_move(chess, whiteKing);
     Chess_check_for_checks_after_move(chess, blackKing);

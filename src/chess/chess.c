@@ -84,7 +84,6 @@ bool Chess_make_move(Chess *game, Piece *piece, Pos pos) {
     if (legal) {
         // Chess_check_for_checks_after_move(game, &move_to->piece);
         Chess_calculate_moves(game);
-        Chess_calculate_moves(game);
     }
 
     return legal;

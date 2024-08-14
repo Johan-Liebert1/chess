@@ -1,9 +1,9 @@
 #include "chess.h"
 
-static int KnightRows[4] = {2, 1, -1, -2};
-static int KnightCols[4][2] = {{-1, 1}, {-2, 2}, {-2, 2}, {-1, 1}};
-static int KnightRowsLen = sizeof(KnightRows) / sizeof(KnightRows[0]);
-static int KnightColsLen = sizeof(KnightCols[0]) / sizeof(KnightCols[0][0]);
+int KnightRows[4] = {2, 1, -1, -2};
+int KnightCols[4][2] = {{-1, 1}, {-2, 2}, {-2, 2}, {-1, 1}};
+int KnightRowsLen = sizeof(KnightRows) / sizeof(KnightRows[0]);
+int KnightColsLen = sizeof(KnightCols[0]) / sizeof(KnightCols[0][0]);
 
 // num_moves -> for consistancy
 void Chess_calculate_knight_moves(Chess *game, Piece *piece, int num_moves) {

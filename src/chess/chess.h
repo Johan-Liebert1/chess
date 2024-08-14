@@ -79,6 +79,11 @@ struct _Chess {
 };
 typedef struct _Chess Chess;
 
+extern int KnightRows[4];
+extern int KnightCols[4][2];
+extern int KnightRowsLen;
+extern int KnightColsLen;
+
 static inline bool pos_within_bounds(int row, int col) { return row >= 0 && row < CHESS_BOARD_ROWS && col >= 0 && col < CHESS_BOARD_COLS; }
 
 const char *piece_type_diplay(enum PieceType type);
