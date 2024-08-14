@@ -52,6 +52,10 @@ void Chess_rook_bishop_queen_check_check(Chess *game, Piece *king, int row_adder
         Cell *cell = &game->board[row][col];
 
         switch (cell->piece.type) {
+            case UndefPieceType: {
+                continue;
+            }
+
             case Rook:
             case Bishop:
             case Queen: {
@@ -63,12 +67,8 @@ void Chess_rook_bishop_queen_check_check(Chess *game, Piece *king, int row_adder
                 return;
             }
 
-            case UndefPieceType: {
-                continue;
-            }
-
             default:
-                break;
+                return;
         };
     }
 }
