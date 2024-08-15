@@ -306,7 +306,7 @@ int main() {
     SDL_Event event;
 
     Chess game = {0};
-    game.game_mode = true;
+    game.game_mode = false;
 
     // enough to store moves for all pieces
     game.arena = arena_init(CHESS_BOARD_COLS * CHESS_BOARD_ROWS * sizeof(Pos) * 35);

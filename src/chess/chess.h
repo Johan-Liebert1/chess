@@ -83,6 +83,18 @@ struct _Chess {
 };
 typedef struct _Chess Chess;
 
+#define PUT_PIECE(board, row_val, col_val, piece_type, color_val, sprite_number_val)                                                                 \
+    board[row_val][col_val].piece = (Piece) {                                                                                                        \
+        .pos = {.row = row_val, .col = col_val}, .type = piece_type, .color = color_val,                                                             \
+        .sprite_loc =                                                                                                                                \
+            (SDL_Rect){.x = (sprite_number_val < SPRITE_SHEET_COLS ? sprite_number_val : sprite_number_val % SPRITE_SHEET_COLS) * SPRITE_WIDTH,      \
+                       .y = sprite_number_val < SPRITE_SHEET_COLS ? 0 : SPRITE_HEIGHT,                                                               \
+                       .w = SPRITE_WIDTH,                                                                                                            \
+                       .h = SPRITE_HEIGHT},                                                                                                          \
+        .sprite_number = sprite_number_val                                                                                                           \
+    }
+
+
 extern int KnightRows[4];
 extern int KnightCols[4][2];
 extern int KnightRowsLen;

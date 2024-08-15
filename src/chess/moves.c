@@ -1,4 +1,5 @@
 #include "chess.h"
+#include <stdio.h>
 
 static inline bool Chess_is_move_available(Chess *game, Piece *piece, int row, int col) {
     // Legal moves for king is already handled
@@ -256,4 +257,54 @@ void Chess_calculate_moves(Chess *chess) {
             Chess_calculate_moves_for_piece(chess, &chess->board[row][col].piece);
         }
     }
+}
+
+void swap_pieces(Cell *move_from, Cell *move_to, Chess *game) {
+    printf("swap pieces: (%d, %d) to (%d, %d)\n", move_from->piece.pos.row, move_from->piece.pos.col, move_to->piece.pos.row, move_to->piece.pos.col);
+
+    move_to->piece = PUT_PIECE(game->board, move_to->piece.pos.row, move_to->piece.pos.col, move_from->piece.type, move_from->piece.color,
+                               move_from->piece.sprite_number);
+
+    move_to->piece.has_moved = true;
+    move_to->piece.moves = move_from->piece.moves;
+
+    move_from->piece = (Piece){ .pos = move_from->piece.pos };
+}
+
+// returns whether the move was legal or not
+bool Chess_make_move(Chess *game, Piece *piece, Pos pos) {
+    Cell *move_from = &game->board[piece->pos.row][piece->pos.col];
+    Cell *move_to = &game->board[pos.row][pos.col];
+
+    printf("Pos { row: %d, col: %d }\n", pos.row, pos.col);
+
+    bool legal = false;
+    bool is_castling = false;
+
+    for (int i = 0; i < piece->num_moves; i++) {
+        if (piece->moves[i].row == pos.row && piece->moves[i].col == pos.col) {
+            is_castling = piece->type == King && abs(pos.col - piece->pos.col) == 2;
+
+            swap_pieces(move_from, move_to, game);
+
+            legal = true;
+        }
+    }
+
+    if (legal) {
+        if (is_castling) {
+            // O-O-O
+            if (piece->pos.col > pos.col) {
+                swap_pieces(&game->board[pos.row][0], &game->board[pos.row][pos.col + 1], game);
+            } else {
+                // O-O
+                swap_pieces(&game->board[pos.row][CHESS_BOARD_COLS - 1], &game->board[pos.row][pos.col - 1], game);
+            }
+        }
+
+        Chess_calculate_moves(game);
+        game->current_turn = 1 - game->current_turn;
+    }
+
+    return legal;
 }

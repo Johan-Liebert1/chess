@@ -43,6 +43,59 @@ void Chess_calculate_king_moves(Chess *game, Piece *piece, int num_moves) {
             }
         }
     }
+
+    // Castling
+    if (piece->has_moved)
+        return;
+
+    // O-O
+    for (int col = piece->pos.col + 1; col < CHESS_BOARD_COLS; col++) {
+        Cell cell = game->board[piece->pos.row][col];
+
+        // Can't castle through a check
+        if (cell.underAttack[1 - piece->color] && col <= piece->pos.col + 2) {
+            break;
+        }
+
+        if (cell.piece.type == UndefPieceType)
+            continue;
+
+        if (cell.piece.type != Rook) {
+            break;
+        } else {
+            // rook has moved, can't castle
+            if (cell.piece.has_moved) {
+                break;
+            }
+
+            add_move_to_piece(game, piece, piece->pos.row, piece->pos.col + 2);
+        }
+    }
+
+    // O-O-O
+    for (int col = piece->pos.col - 1; col >= 0; col--) {
+        Cell cell = game->board[piece->pos.row][col];
+
+        // Can't castle through a check
+        if (cell.underAttack[1 - piece->color] && col >= piece->pos.col - 2) {
+            break;
+        }
+
+        if (cell.piece.type == UndefPieceType) {
+            continue;
+        }
+
+        if (cell.piece.type != Rook) {
+            break;
+        } else {
+            // rook has moved, can't castle
+            if (cell.piece.has_moved) {
+                break;
+            }
+
+            add_move_to_piece(game, piece, piece->pos.row, piece->pos.col - 2);
+        }
+    }
 }
 
 // Handle double checks

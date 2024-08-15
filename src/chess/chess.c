@@ -2,17 +2,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-#define PUT_PIECE(board, row_val, col_val, piece_type, color_val, sprite_number_val)                                                                 \
-    board[row_val][col_val].piece = (Piece) {                                                                                                        \
-        .pos = {.row = row_val, .col = col_val}, .type = piece_type, .color = color_val,                                                             \
-        .sprite_loc =                                                                                                                                \
-            (SDL_Rect){.x = (sprite_number_val < SPRITE_SHEET_COLS ? sprite_number_val : sprite_number_val % SPRITE_SHEET_COLS) * SPRITE_WIDTH,      \
-                       .y = sprite_number_val < SPRITE_SHEET_COLS ? 0 : SPRITE_HEIGHT,                                                               \
-                       .w = SPRITE_WIDTH,                                                                                                            \
-                       .h = SPRITE_HEIGHT},                                                                                                          \
-        .sprite_number = sprite_number_val                                                                                                           \
-    }
-
 Piece *Chess_find_piece(Chess *game, enum PieceType type, enum Color pieceColor) {
     for (int i = 0; i < CHESS_BOARD_ROWS; i++) {
         for (int j = 0; j < CHESS_BOARD_ROWS; j++) {
@@ -62,29 +51,3 @@ void Chess_init_board(Chess *chess) {
     }
 }
 
-// returns whether the move was legal or not
-bool Chess_make_move(Chess *game, Piece *piece, Pos pos) {
-    Cell *move_from = &game->board[piece->pos.row][piece->pos.col];
-    Cell *move_to = &game->board[pos.row][pos.col];
-
-    bool legal = false;
-
-    for (int i = 0; i < piece->num_moves; i++) {
-        if (piece->moves[i].row == pos.row && piece->moves[i].col == pos.col) {
-            move_to->piece = PUT_PIECE(game->board, pos.row, pos.col, move_from->piece.type, move_from->piece.color, move_from->piece.sprite_number);
-            move_to->piece.has_moved = true;
-            move_to->piece.moves = move_from->piece.moves;
-
-            move_from->piece = (Piece){0};
-            legal = true;
-        }
-    }
-
-    if (legal) {
-        // Chess_check_for_checks_after_move(game, &move_to->piece);
-        Chess_calculate_moves(game);
-        game->current_turn = 1 - game->current_turn;
-    }
-
-    return legal;
-}
