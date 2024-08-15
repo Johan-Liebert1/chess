@@ -307,6 +307,7 @@ int main() {
 
     Chess game = {0};
     game.game_mode = false;
+    game.white_at_bottom = true;
 
     // enough to store moves for all pieces
     game.arena = arena_init(CHESS_BOARD_COLS * CHESS_BOARD_ROWS * sizeof(Pos) * 35);

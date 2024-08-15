@@ -27,27 +27,33 @@ void Chess_init_board(Chess *chess) {
         }
     }
 
-    PUT_PIECE(chess->board, 0, 0, Rook, ColorWhite, 4);
-    PUT_PIECE(chess->board, 0, 1, Knight, ColorWhite, 3);
-    PUT_PIECE(chess->board, 0, 2, Bishop, ColorWhite, 2);
-    PUT_PIECE(chess->board, 0, 3, Queen, ColorWhite, 1);
-    PUT_PIECE(chess->board, 0, 4, King, ColorWhite, 0);
-    PUT_PIECE(chess->board, 0, 5, Bishop, ColorWhite, 2);
-    PUT_PIECE(chess->board, 0, 6, Knight, ColorWhite, 3);
-    PUT_PIECE(chess->board, 0, 7, Rook, ColorWhite, 4);
+    int white_pawn_row = chess->white_at_bottom ? CHESS_BOARD_ROWS - 1 : 0;
 
-    PUT_PIECE(chess->board, 7, 0, Rook, ColorBlack, 10);
-    PUT_PIECE(chess->board, 7, 1, Knight, ColorBlack, 9);
-    PUT_PIECE(chess->board, 7, 2, Bishop, ColorBlack, 8);
-    PUT_PIECE(chess->board, 7, 3, Queen, ColorBlack, 7);
-    PUT_PIECE(chess->board, 7, 4, King, ColorBlack, 6);
-    PUT_PIECE(chess->board, 7, 5, Bishop, ColorBlack, 8);
-    PUT_PIECE(chess->board, 7, 6, Knight, ColorBlack, 9);
-    PUT_PIECE(chess->board, 7, 7, Rook, ColorBlack, 10);
+    PUT_PIECE(chess->board, white_pawn_row, 0, Rook, ColorWhite, 4);
+    PUT_PIECE(chess->board, white_pawn_row, 1, Knight, ColorWhite, 3);
+    PUT_PIECE(chess->board, white_pawn_row, 2, Bishop, ColorWhite, 2);
+    PUT_PIECE(chess->board, white_pawn_row, 3, Queen, ColorWhite, 1);
+    PUT_PIECE(chess->board, white_pawn_row, 4, King, ColorWhite, 0);
+    PUT_PIECE(chess->board, white_pawn_row, 5, Bishop, ColorWhite, 2);
+    PUT_PIECE(chess->board, white_pawn_row, 6, Knight, ColorWhite, 3);
+    PUT_PIECE(chess->board, white_pawn_row, 7, Rook, ColorWhite, 4);
+
+    int black_pawn_row = chess->white_at_bottom ? 0 : CHESS_BOARD_ROWS - 1;
+
+    PUT_PIECE(chess->board, black_pawn_row, 0, Rook, ColorBlack, 10);
+    PUT_PIECE(chess->board, black_pawn_row, 1, Knight, ColorBlack, 9);
+    PUT_PIECE(chess->board, black_pawn_row, 2, Bishop, ColorBlack, 8);
+    PUT_PIECE(chess->board, black_pawn_row, 3, Queen, ColorBlack, 7);
+    PUT_PIECE(chess->board, black_pawn_row, 4, King, ColorBlack, 6);
+    PUT_PIECE(chess->board, black_pawn_row, 5, Bishop, ColorBlack, 8);
+    PUT_PIECE(chess->board, black_pawn_row, 6, Knight, ColorBlack, 9);
+    PUT_PIECE(chess->board, black_pawn_row, 7, Rook, ColorBlack, 10);
+
+    white_pawn_row = chess->white_at_bottom ? white_pawn_row - 1 : white_pawn_row + 1;
+    black_pawn_row = chess->white_at_bottom ? black_pawn_row + 1 : black_pawn_row - 1;
 
     for (int i = 0; i < CHESS_BOARD_COLS; i++) {
-        PUT_PIECE(chess->board, 1, i, Pawn, ColorWhite, 5);
-        PUT_PIECE(chess->board, 6, i, Pawn, ColorBlack, 11);
+        PUT_PIECE(chess->board, white_pawn_row, i, Pawn, ColorWhite, 5);
+        PUT_PIECE(chess->board, black_pawn_row, i, Pawn, ColorBlack, 11);
     }
 }
-

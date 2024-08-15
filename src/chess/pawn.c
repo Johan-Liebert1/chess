@@ -8,8 +8,14 @@ void Chess_calculate_pawn_moves(Chess *game, Piece *piece, int num_moves) {
         piece->moves = arena_alloc(&game->arena, sizeof(Pos) * 64);
     }
 
-    // White is always at the top. Even when rotating the board, we only display it upside down
-    int row_adder = piece->color == ColorWhite ? 1 : -1;
+    // Even when rotating the board, we only display it upside down
+    int row_adder;
+
+    if (game->white_at_bottom) {
+        row_adder = piece->color == ColorWhite ? -1 : 1;
+    } else {
+        row_adder = piece->color == ColorWhite ? 1 : -1;
+    }
 
     int row = piece->pos.row + row_adder;
     int col = piece->pos.col;
@@ -45,4 +51,3 @@ void Chess_calculate_pawn_moves(Chess *game, Piece *piece, int num_moves) {
         }
     }
 }
-

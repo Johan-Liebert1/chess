@@ -34,8 +34,6 @@ static inline bool Chess_is_move_available(Chess *game, Piece *piece, int row, i
 
 void add_move_to_piece(Chess *game, Piece *piece, int row, int col) {
     if (!Chess_is_move_available(game, piece, row, col)) {
-        if (piece->type == Pawn)
-            printf("move (%d, %d) is not available\n", row, col);
         return;
     }
 
@@ -168,10 +166,6 @@ void Chess_get_available_moves_for_color(Chess *game, enum Color color, Piece *k
         }
     }
 
-    printf("Chess_get_available_moves_for_color: %s.\n", color_diplay(color));
-    printf("Piece checking king: ");
-    print_piece(pieceCheckingKing);
-
     switch (pieceCheckingKing->type) {
         case UndefPieceType: {
             assert(false && "pieceCheckingKing is not an actual piece");
@@ -254,29 +248,32 @@ void Chess_calculate_moves(Chess *chess) {
 
     for (size_t row = 0; row < CHESS_BOARD_ROWS; row++) {
         for (size_t col = 0; col < CHESS_BOARD_COLS; col++) {
-            Chess_calculate_moves_for_piece(chess, &chess->board[row][col].piece);
+            // calculate king moves at the end as we need to take into account
+            // all attacked squares
+            if (chess->board[row][col].piece.type != King) {
+                Chess_calculate_moves_for_piece(chess, &chess->board[row][col].piece);
+            }
         }
     }
+
+    Chess_calculate_moves_for_piece(chess, whiteKing);
+    Chess_calculate_moves_for_piece(chess, blackKing);
 }
 
 void swap_pieces(Cell *move_from, Cell *move_to, Chess *game) {
-    printf("swap pieces: (%d, %d) to (%d, %d)\n", move_from->piece.pos.row, move_from->piece.pos.col, move_to->piece.pos.row, move_to->piece.pos.col);
-
     move_to->piece = PUT_PIECE(game->board, move_to->piece.pos.row, move_to->piece.pos.col, move_from->piece.type, move_from->piece.color,
                                move_from->piece.sprite_number);
 
     move_to->piece.has_moved = true;
     move_to->piece.moves = move_from->piece.moves;
 
-    move_from->piece = (Piece){ .pos = move_from->piece.pos };
+    move_from->piece = (Piece){.pos = move_from->piece.pos};
 }
 
 // returns whether the move was legal or not
 bool Chess_make_move(Chess *game, Piece *piece, Pos pos) {
     Cell *move_from = &game->board[piece->pos.row][piece->pos.col];
     Cell *move_to = &game->board[pos.row][pos.col];
-
-    printf("Pos { row: %d, col: %d }\n", pos.row, pos.col);
 
     bool legal = false;
     bool is_castling = false;

@@ -80,6 +80,8 @@ struct _Chess {
     // if in game_mode, only then the current_turn is taken into account
     bool game_mode;
     enum Color current_turn;
+
+    bool white_at_bottom;
 };
 typedef struct _Chess Chess;
 
