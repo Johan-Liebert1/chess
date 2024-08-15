@@ -76,6 +76,10 @@ struct _Chess {
     // idx 0 != NULL -> black king in check
     // idx 1 != NULL -> white king in check
     Piece *kingInCheck[2];
+
+    // if in game_mode, only then the current_turn is taken into account
+    bool game_mode;
+    enum Color current_turn;
 };
 typedef struct _Chess Chess;
 

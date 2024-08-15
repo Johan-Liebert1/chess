@@ -181,7 +181,6 @@ void draw_chess_board(Chess *game, SDL_Renderer *renderer, TTF_Font *font, SDL_T
                 SDL_DestroyTexture(message);
             }
 
-
             if (col == 0) {
                 snprintf(buf, 2, "%d", CHESS_BOARD_ROWS - row);
                 SDL_Surface *surfaceMessage = TTF_RenderText_Blended(font, buf, cell.color == ColorWhite ? COLOR_BLACK : COLOR_WHITE);
@@ -232,6 +231,42 @@ void show_piece_moves(SDL_Renderer *renderer, Chess *game, Piece *piece) {
     }
 }
 
+void handle_mouse_click(Chess *game, Pos *pos) {
+    if (!pos_within_bounds(pos->row, pos->col)) {
+        return;
+    }
+
+    Cell *cell = &game->board[pos->row][pos->col];
+
+    if (game->game_mode) {
+        if (game->clicked_piece == NULL && cell->piece.color != game->current_turn) {
+            return;
+        }
+    }
+
+    if (game->clicked_piece == NULL && cell->piece.type != UndefPieceType) {
+        game->clicked_piece = &cell->piece;
+        return;
+    }
+
+    if (game->clicked_piece == &cell->piece) {
+        // clicked on the same piece
+        game->clicked_piece = NULL;
+        return;
+    }
+
+    if (game->clicked_piece != NULL) {
+        // Player has alredy clicked a piece, now he's clicked again. Might be a move
+        if (Chess_make_move(game, game->clicked_piece, *pos)) {
+            // move was leagal
+            game->clicked_piece = NULL;
+        } else if (cell->piece.type != UndefPieceType) {
+            // move was illegal. Reset the clicked_piece if click was on another piece
+            game->clicked_piece = &cell->piece;
+        }
+    }
+}
+
 int main() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL initialization failed! %s\n", SDL_GetError());
@@ -271,6 +306,7 @@ int main() {
     SDL_Event event;
 
     Chess game = {0};
+    game.game_mode = true;
 
     // enough to store moves for all pieces
     game.arena = arena_init(CHESS_BOARD_COLS * CHESS_BOARD_ROWS * sizeof(Pos) * 35);
@@ -316,29 +352,7 @@ int main() {
                 }
 
                 case SDL_MOUSEBUTTONDOWN: {
-                    if (!pos_within_bounds(pos.row, pos.col)) {
-                        break;
-                    }
-
-                    Cell *cell = &game.board[pos.row][pos.col];
-
-                    if (game.clicked_piece == NULL && cell->piece.type != UndefPieceType) {
-                        game.clicked_piece = &cell->piece;
-                    } else if (game.clicked_piece == &cell->piece) {
-                        // clicked on the same piece
-                        game.clicked_piece = NULL;
-                    } else if (game.clicked_piece != NULL) {
-                        // Player has alredy clicked a piece, now he's clicked again. Might be a move
-                        if (Chess_make_move(&game, game.clicked_piece, pos)) {
-                            // move was leagal
-                            game.clicked_piece = NULL;
-                        } else if (cell->piece.type != UndefPieceType) {
-                            // move was illegal. Reset the clicked_piece if click was on another piece
-                            game.clicked_piece = &cell->piece;
-                        }
-                    }
-
-                    break;
+                    handle_mouse_click(&game, &pos);
                 }
             }
 

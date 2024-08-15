@@ -13,7 +13,6 @@
         .sprite_number = sprite_number_val                                                                                                           \
     }
 
-
 Piece *Chess_find_piece(Chess *game, enum PieceType type, enum Color pieceColor) {
     for (int i = 0; i < CHESS_BOARD_ROWS; i++) {
         for (int j = 0; j < CHESS_BOARD_ROWS; j++) {
@@ -84,6 +83,7 @@ bool Chess_make_move(Chess *game, Piece *piece, Pos pos) {
     if (legal) {
         // Chess_check_for_checks_after_move(game, &move_to->piece);
         Chess_calculate_moves(game);
+        game->current_turn = 1 - game->current_turn;
     }
 
     return legal;
